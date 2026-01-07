@@ -61,3 +61,17 @@ export function register(name: string, email: string, password: string) {
 export function fetchProfile(token: string) {
   return request<User>("/api/profile/me", { method: "GET" }, token);
 }
+
+export function scanBarcode(barcode: string) {
+  return request<{ ok: boolean; source: string; data: any }>("/api/scan", {
+    method: "POST",
+    body: JSON.stringify({ barcode }),
+  });
+}
+
+export function scanImage(imageBase64: string, mimeType = "image/jpeg") {
+  return request<{ ok: boolean; source: string; data: any }>("/api/scan", {
+    method: "POST",
+    body: JSON.stringify({ imageBase64, mimeType }),
+  });
+}
