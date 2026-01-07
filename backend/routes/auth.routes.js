@@ -39,7 +39,6 @@ router.post("/register", async (req, res) => {
       name,
       email,
       passwordHash,
-      // les autres champs (age, goal, etc.) resteront null par défaut
     });
 
     const token = generateToken(user._id);
@@ -77,16 +76,12 @@ router.post("/login", async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(401).json({
-        message: "Identifiants invalides",
-      });
+      return res.status(401).json({ message: "Identifiants invalides" });
     }
 
     const isValid = await bcrypt.compare(password, user.passwordHash);
     if (!isValid) {
-      return res.status(401).json({
-        message: "Identifiants invalides",
-      });
+      return res.status(401).json({ message: "Identifiants invalides" });
     }
 
     const token = generateToken(user._id);

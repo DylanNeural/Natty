@@ -1,40 +1,53 @@
-﻿const express = require("express");
+﻿require("dotenv").config();
+
+const express = require("express");
 const cors = require("cors");
+
 const connectDB = require("./backend/config/db");
+
 const authRoutes = require("./backend/routes/auth.routes");
 const mealsRoutes = require("./backend/routes/meals.routes");
+const scanRoutes = require("./backend/routes/scan.routes");
 
 const app = express();
 
-// Connect to MongoDB
+// TRACEUR: si tu ne vois pas ce log, ce n'est pas ce fichier qui tourne
+console.log("✅ ROOT server.js est bien lancé");
+
 connectDB();
 
-// CORS for local dev (reflects origin, allows credentials)
-const corsOptions = {
-  origin: true,
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  optionsSuccessStatus: 200,
-};
-app.use(cors(corsOptions));
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    optionsSuccessStatus: 200,
+  })
+);
 
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 
-// API routes
+// Routes
 app.use("/api/profile", require("./backend/routes/profile.routes"));
 app.use("/api/progress", require("./backend/routes/progress.routes"));
 app.use("/api/auth", authRoutes);
 app.use("/api/meals", mealsRoutes);
 
-// Health/test route
+// === SCAN ===
+console.log("✅ scanRoutes chargé ?", !!scanRoutes);
+app.use("/api", scanRoutes); // => POST /api/scan
+
+// Sonde (si celle-ci marche, Express est OK)
+app.post("/api/_ping_scan", (req, res) => {
+  res.json({ ok: true, where: "root server.js", body: req.body });
+});
+
 app.get("/", (req, res) => {
-  res.send("API Natty en ligne");
+  res.send("API Natty en ligne ✅");
 });
 
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
-  console.log("Connecte a MongoDB (si aucun message d'erreur au-dessus)");
-  console.log(`Serveur backend demarre sur http://localhost:${PORT}`);
+  console.log(`✅ Serveur backend démarré sur http://localhost:${PORT}`);
 });
