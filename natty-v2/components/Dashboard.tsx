@@ -1,12 +1,36 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Screen } from '../App';
+import { scanBarcode } from '../services/api';
 
 interface Props {
   onNavigate: (screen: Screen) => void;
 }
 
 export const Dashboard: React.FC<Props> = ({ onNavigate }) => {
+  const [barcode, setBarcode] = useState('');
+  const [scanResult, setScanResult] = useState<any>(null);
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+
+  const handleScan = async () => {
+    if (!barcode.trim()) {
+      setScanError('Saisis un code-barres');
+      return;
+    }
+    try {
+      setScanLoading(true);
+      setScanError(null);
+      const resp = await scanBarcode(barcode.trim());
+      setScanResult(resp.data);
+    } catch (err: any) {
+      setScanResult(null);
+      setScanError(err?.message || 'Impossible de scanner pour le moment');
+    } finally {
+      setScanLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 px-4 pt-4 pb-24">
       {/* Header */}
@@ -101,6 +125,58 @@ export const Dashboard: React.FC<Props> = ({ onNavigate }) => {
         </button>
       </div>
 
+      {/* Barcode scanner (backend OpenFoodFacts) */}
+      <div className="rounded-3xl bg-white dark:bg-card-dark border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Scan code-barres</p>
+            <p className="text-lg font-bold text-text-light dark:text-text-dark">OpenFoodFacts</p>
+          </div>
+          <span className="material-symbols-outlined text-primary">barcode_scanner</span>
+        </div>
+        <div className="flex gap-2">
+          <input
+            value={barcode}
+            onChange={(e) => setBarcode(e.target.value)}
+            className="flex-1 h-12 px-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-text-light dark:text-text-dark placeholder-gray-400 focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+            placeholder="Ex: 3274080005003"
+            aria-label="Code-barres"
+          />
+          <button
+            onClick={handleScan}
+            disabled={scanLoading}
+            className="h-12 px-4 rounded-2xl bg-primary text-white font-bold shadow-md shadow-primary/20 active:scale-95 disabled:opacity-60"
+          >
+            {scanLoading ? 'Scan...' : 'Scanner'}
+          </button>
+        </div>
+        {scanError && <p className="text-sm text-red-500 font-semibold mt-2">{scanError}</p>}
+        {scanResult && (
+          <div className="mt-4 space-y-2 text-sm text-text-light dark:text-text-dark">
+            <p className="font-bold text-base">{scanResult.nom || 'Produit'}</p>
+            <p className="text-gray-500 dark:text-gray-400">{scanResult.marque}</p>
+            {scanResult.description && <p className="text-gray-500 dark:text-gray-400">{scanResult.description}</p>}
+            {Array.isArray(scanResult.ingredients) && scanResult.ingredients.length > 0 && (
+              <p className="text-gray-500 dark:text-gray-400">
+                Ingrédients: <span className="font-semibold">{scanResult.ingredients.slice(0, 6).join(', ')}</span>
+              </p>
+            )}
+            {scanResult.valeurs_nutritionnelles && (
+              <div className="grid grid-cols-2 gap-2 text-gray-700 dark:text-gray-200">
+                <NutItem label="Énergie" value={scanResult.valeurs_nutritionnelles.energie_kcal} suffix="kcal" />
+                <NutItem label="Protéines" value={scanResult.valeurs_nutritionnelles.proteines_g} suffix="g" />
+                <NutItem label="Glucides" value={scanResult.valeurs_nutritionnelles.glucides_g} suffix="g" />
+                <NutItem label="Sucres" value={scanResult.valeurs_nutritionnelles.dont_sucres_g} suffix="g" />
+                <NutItem label="Lipides" value={scanResult.valeurs_nutritionnelles.lipides_g} suffix="g" />
+                <NutItem label="Saturés" value={scanResult.valeurs_nutritionnelles.dont_satures_g} suffix="g" />
+                <NutItem label="Fibres" value={scanResult.valeurs_nutritionnelles.fibres_g} suffix="g" />
+                <NutItem label="Sel" value={scanResult.valeurs_nutritionnelles.sel_g} suffix="g" />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Schedule */}
       <div>
         <h3 className="text-text-light dark:text-text-dark text-xl font-bold mb-4 px-1">Programme du jour</h3>
@@ -161,5 +237,12 @@ const ScheduleItem: React.FC<{icon: string; iconColor: string; bgColor: string; 
       </div>
       <p className="text-gray-500 dark:text-gray-400 text-sm">{desc}</p>
     </div>
+  </div>
+);
+
+const NutItem: React.FC<{label: string; value?: number | string; suffix?: string}> = ({ label, value, suffix = '' }) => (
+  <div className="flex items-center justify-between rounded-xl bg-gray-50 dark:bg-gray-800 px-3 py-2">
+    <span className="text-xs text-gray-500">{label}</span>
+    <span className="text-sm font-semibold">{value ?? '-' }{value ? ` ${suffix}` : ''}</span>
   </div>
 );
