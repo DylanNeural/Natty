@@ -37,7 +37,7 @@ async function request<T>(path: string, options: RequestInit = {}, token?: strin
   }
 
   if (!res.ok) {
-    const message = data?.message || `Erreur ${res.status}`;
+    const message = data?.message || data?.error?.message || `Erreur ${res.status}`;
     throw new Error(message);
   }
 
