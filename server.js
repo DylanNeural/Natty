@@ -26,7 +26,9 @@ app.use(
   })
 );
 
-app.use(express.json({ limit: "10mb" }));
+// Accept large payloads for base64 images
+app.use(express.json({ limit: "100mb" }));
+app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 
 // Routes
 app.use("/api/profile", require("./backend/routes/profile.routes"));
