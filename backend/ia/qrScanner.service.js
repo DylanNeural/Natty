@@ -212,11 +212,20 @@ Si illisible, explique dans commentaires.
         message: "Analyse trop longue, réessaie avec une image plus légère.",
       });
     }
+    if (err instanceof SyntaxError) {
+      console.error("OPENAI_PARSE_ERROR:", err);
+      throw new AppError({
+        status: 502,
+        code: "OPENAI_PARSE_ERROR",
+        message: "Réponse OpenAI invalide.",
+      });
+    }
 
+    console.error("OPENAI_ERROR scanImage:", err);
     throw new AppError({
       status: 502,
       code: "OPENAI_ERROR",
-      message: "Erreur OpenAI pendant l’analyse image.",
+      message: "Erreur OpenAI pendant l'analyse image.",
     });
   }
 }
