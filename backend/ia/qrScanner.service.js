@@ -167,7 +167,7 @@ Si illisible, explique dans commentaires.
         },
       ],
       response_format: { type: "json_object" },
-      timeout: 15000,
+      timeout: 60000,
     });
 
     const json = JSON.parse(resp.choices[0].message.content);
