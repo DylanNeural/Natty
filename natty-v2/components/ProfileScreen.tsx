@@ -1,11 +1,17 @@
-
 import React from 'react';
+import { User } from '../services/api';
 
 interface Props {
+  user: User | null;
   onLogout: () => void;
 }
 
-export const ProfileScreen: React.FC<Props> = ({ onLogout }) => {
+export const ProfileScreen: React.FC<Props> = ({ user, onLogout }) => {
+  const displayName = user?.name || 'Utilisateur Natty';
+  const displayEmail = user?.email || 'email@example.com';
+  const displayGoal = user?.goal || 'Prise de muscle';
+  const displayDiet = user?.dietaryPreferences?.[0] || 'Végétarien';
+
   return (
     <div className="flex flex-col h-full bg-background-light dark:bg-background-dark pb-32">
       <header className="flex items-center justify-center p-4 relative">
@@ -19,13 +25,13 @@ export const ProfileScreen: React.FC<Props> = ({ onLogout }) => {
              <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full"></div>
              <div className="relative size-36 rounded-full border-4 border-white dark:border-card-dark bg-cover bg-center shadow-2xl" 
                   role="img"
-                  aria-label="Photo de profil de Alex Johnson"
+                  aria-label={`Photo de profil de ${displayName}`}
                   style={{backgroundImage: 'url("https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=2787&auto=format&fit=crop")'}}></div>
              <button aria-label="Modifier la photo de profil" className="absolute bottom-1 right-1 p-2.5 rounded-full bg-warning text-white shadow-lg border-4 border-background-light dark:border-background-dark active:scale-90 transition-transform">
                <span className="material-symbols-outlined text-xl" aria-hidden="true">edit</span>
              </button>
           </div>
-          <h2 className="text-3xl font-bold text-text-light dark:text-text-dark">Alex Johnson</h2>
+          <h2 className="text-3xl font-bold text-text-light dark:text-text-dark">{displayName}</h2>
           <div className="flex items-center gap-1 mt-2 bg-gradient-to-r from-secondary/10 to-primary/10 px-4 py-1.5 rounded-full border border-secondary/20">
             <span className="material-symbols-outlined text-secondary text-sm filled" aria-hidden="true">verified</span>
             <p className="text-secondary font-bold text-sm">Membre Pro</p>
@@ -41,14 +47,13 @@ export const ProfileScreen: React.FC<Props> = ({ onLogout }) => {
         {/* Info Section */}
         <div className="space-y-6">
           <Section title="Informations Personnelles">
-            <ListItem icon="person" label="Nom" value="Alex Johnson" />
-            <ListItem icon="cake" label="Âge" value="28 ans" />
-            <ListItem icon="weight" label="Poids" value="75 kg" />
+            <ListItem icon="person" label="Nom" value={displayName} />
+            <ListItem icon="mail" label="Email" value={displayEmail} />
           </Section>
 
           <Section title="Objectifs & Régime">
-            <ListItem icon="flag" label="Objectif Principal" value="Prise de muscle" color="text-warning" />
-            <ListItem icon="restaurant_menu" label="Préférences" value="Végan" color="text-secondary" />
+            <ListItem icon="flag" label="Objectif Principal" value={displayGoal} color="text-warning" />
+            <ListItem icon="restaurant_menu" label="Préférences" value={displayDiet} color="text-secondary" />
           </Section>
 
           <Section title="Accès Coach">
@@ -56,11 +61,11 @@ export const ProfileScreen: React.FC<Props> = ({ onLogout }) => {
               className="flex items-center gap-4 bg-white dark:bg-card-dark p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 active:bg-gray-50 dark:active:bg-gray-800 transition-colors cursor-pointer"
               role="button"
               tabIndex={0}
-              aria-label="Gérer l'accès au coach Sarah Jenkins"
+              aria-label="Gérer l'accès au coach"
             >
-              <img className="size-14 rounded-full object-cover ring-2 ring-gray-100 dark:ring-gray-700" src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=2940&auto=format&fit=crop" alt="Coach Sarah Jenkins" />
+              <img className="size-14 rounded-full object-cover ring-2 ring-gray-100 dark:ring-gray-700" src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=2940&auto=format&fit=crop" alt="Coach" />
               <div className="flex-1">
-                <p className="font-bold text-text-light dark:text-text-dark text-lg">Sarah Jenkins</p>
+                <p className="font-bold text-text-light dark:text-text-dark text-lg">Votre coach</p>
                 <p className="text-xs text-secondary font-bold uppercase tracking-wide">Coach Performance</p>
               </div>
               <button className="px-5 py-2.5 bg-primary text-white font-bold text-sm rounded-xl active:bg-primary/90 transition-colors shadow-md shadow-primary/20">Gérer</button>
