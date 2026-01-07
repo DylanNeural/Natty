@@ -4,12 +4,6 @@ const OpenAI = require("openai");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-function withTimeout(ms) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), ms);
-  return { signal: controller.signal, cancel: () => clearTimeout(timer) };
-}
-
 class AppError extends Error {
   constructor({ status = 500, code = "SERVER_ERROR", message = "Erreur serveur", details = null }) {
     super(message);
@@ -144,24 +138,24 @@ Ne mets pas de décimales (entiers).
 Si illisible, explique dans commentaires.
 `.trim();
 
-    const { signal, cancel } = withTimeout(25000); // 25s max pour éviter les 504
-
-    const resp = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      temperature: 0.2,
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            { type: "image_url", image_url: { url: `data:${mimeType};base64,${img}` } },
-          ],
-        },
-      ],
-      response_format: { type: "json_object" },
-      signal,
-    });
-    cancel();
+    // Timeout manuel (25s) car le SDK OpenAI Node ne supporte pas "signal"
+    const resp = await Promise.race([
+      openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        temperature: 0.2,
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              { type: "image_url", image_url: { url: `data:${mimeType};base64,${img}` } },
+            ],
+          },
+        ],
+        response_format: { type: "json_object" },
+      }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("OPENAI_TIMEOUT_CLIENT")), 25000)),
+    ]);
 
     const json = JSON.parse(resp.choices[0].message.content);
 
@@ -199,18 +193,11 @@ Si illisible, explique dans commentaires.
         message: "Limite OpenAI atteinte. Réessaie plus tard.",
       });
     }
-    if (msg.toLowerCase().includes("timeout")) {
+    if (msg.toLowerCase().includes("timeout") || msg.includes("OPENAI_TIMEOUT_CLIENT")) {
       throw new AppError({
         status: 504,
         code: "OPENAI_TIMEOUT",
         message: "OpenAI ne répond pas (timeout).",
-      });
-    }
-    if (err.name === "AbortError") {
-      throw new AppError({
-        status: 504,
-        code: "OPENAI_TIMEOUT",
-        message: "Analyse trop longue, réessaie avec une image plus légère.",
       });
     }
     if (err instanceof SyntaxError) {
@@ -221,7 +208,6 @@ Si illisible, explique dans commentaires.
         message: "Réponse OpenAI invalide.",
       });
     }
-    // cas génériques selon status HTTP retourné par l'SDK OpenAI
     const status = err?.status || err?.response?.status;
     if (status === 429) {
       throw new AppError({
