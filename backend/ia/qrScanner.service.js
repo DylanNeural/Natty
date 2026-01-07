@@ -182,6 +182,7 @@ Si illisible, explique dans commentaires.
 
     return json;
   } catch (err) {
+    console.error("OPENAI_ERROR scanImage:", err);
     const msg = String(err?.message || "");
 
     if (msg.includes("401")) {
@@ -220,8 +221,23 @@ Si illisible, explique dans commentaires.
         message: "Réponse OpenAI invalide.",
       });
     }
+    // cas génériques selon status HTTP retourné par l'SDK OpenAI
+    const status = err?.status || err?.response?.status;
+    if (status === 429) {
+      throw new AppError({
+        status: 429,
+        code: "OPENAI_RATE_LIMIT",
+        message: "Limite OpenAI atteinte. Réessaie plus tard.",
+      });
+    }
+    if (status === 401) {
+      throw new AppError({
+        status: 401,
+        code: "OPENAI_UNAUTHORIZED",
+        message: "Clé OpenAI invalide ou non autorisée.",
+      });
+    }
 
-    console.error("OPENAI_ERROR scanImage:", err);
     throw new AppError({
       status: 502,
       code: "OPENAI_ERROR",
