@@ -4,6 +4,12 @@ const OpenAI = require("openai");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+function withTimeout(ms) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  return { signal: controller.signal, cancel: () => clearTimeout(timer) };
+}
+
 class AppError extends Error {
   constructor({ status = 500, code = "SERVER_ERROR", message = "Erreur serveur", details = null }) {
     super(message);
@@ -16,8 +22,6 @@ class AppError extends Error {
 function mapOFFToResult(off) {
   const p = off.product || {};
   const n = p.nutriments || {};
-
-  // (vous avez demandé pas de décimales)
   const toInt = (v) => (v === undefined || v === null || v === "" ? 0 : Math.round(Number(v)));
 
   return {
@@ -69,17 +73,11 @@ async function scanBarcode(barcode) {
   try {
     const { data } = await axios.get(url, {
       timeout: 10000,
-      headers: {
-        // conseillé par OFF : identifie votre app
-        "User-Agent": "Natty/1.0 (contact: dev@natty.app)",
-      },
+      headers: { "User-Agent": "Natty/1.0 (contact: dev@natty.app)" },
     });
 
-    if (data?.status === 1) {
-      return mapOFFToResult(data);
-    }
+    if (data?.status === 1) return mapOFFToResult(data);
 
-    // OFF a répondu mais produit introuvable
     throw new AppError({
       status: 404,
       code: "PRODUCT_NOT_FOUND",
@@ -87,12 +85,9 @@ async function scanBarcode(barcode) {
       details: { barcode: b },
     });
   } catch (err) {
-    // Erreurs OFF/HTTP
     if (err instanceof AppError) throw err;
-
     if (axios.isAxiosError(err)) {
       const st = err.response?.status;
-
       if (st === 429) {
         throw new AppError({
           status: 429,
@@ -100,7 +95,6 @@ async function scanBarcode(barcode) {
           message: "Trop de requêtes vers OpenFoodFacts. Réessaie dans quelques secondes.",
         });
       }
-
       if (st && st >= 500) {
         throw new AppError({
           status: 503,
@@ -108,7 +102,6 @@ async function scanBarcode(barcode) {
           message: "OpenFoodFacts indisponible pour le moment.",
         });
       }
-
       if (err.code === "ECONNABORTED") {
         throw new AppError({
           status: 504,
@@ -116,7 +109,6 @@ async function scanBarcode(barcode) {
           message: "OpenFoodFacts ne répond pas (timeout).",
         });
       }
-
       throw new AppError({
         status: 502,
         code: "OFF_ERROR",
@@ -124,8 +116,6 @@ async function scanBarcode(barcode) {
         details: { status: st || null },
       });
     }
-
-    // Erreur inconnue
     throw new AppError({
       status: 500,
       code: "SERVER_ERROR",
@@ -154,6 +144,8 @@ Ne mets pas de décimales (entiers).
 Si illisible, explique dans commentaires.
 `.trim();
 
+    const { signal, cancel } = withTimeout(25000); // 25s max pour éviter les 504
+
     const resp = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       temperature: 0.2,
@@ -167,12 +159,12 @@ Si illisible, explique dans commentaires.
         },
       ],
       response_format: { type: "json_object" },
-      timeout: 60000,
+      signal,
     });
+    cancel();
 
     const json = JSON.parse(resp.choices[0].message.content);
 
-    // Force entiers si jamais l'IA en renvoie
     const toInt = (v) => (v === undefined || v === null || v === "" ? 0 : Math.round(Number(v)));
     if (json?.valeurs_nutritionnelles) {
       const vn = json.valeurs_nutritionnelles;
@@ -190,7 +182,6 @@ Si illisible, explique dans commentaires.
 
     return json;
   } catch (err) {
-    // OpenAI errors typiques
     const msg = String(err?.message || "");
 
     if (msg.includes("401")) {
@@ -212,6 +203,13 @@ Si illisible, explique dans commentaires.
         status: 504,
         code: "OPENAI_TIMEOUT",
         message: "OpenAI ne répond pas (timeout).",
+      });
+    }
+    if (err.name === "AbortError") {
+      throw new AppError({
+        status: 504,
+        code: "OPENAI_TIMEOUT",
+        message: "Analyse trop longue, réessaie avec une image plus légère.",
       });
     }
 
