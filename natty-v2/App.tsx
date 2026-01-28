@@ -1,128 +1,189 @@
 
-import React, { useState, useEffect } from 'react';
-import { SplashScreen } from './components/SplashScreen';
-import { LandingScreen } from './components/LandingScreen';
-import { LoginScreen } from './components/LoginScreen';
-import { OnboardingGoals } from './components/OnboardingGoals';
-import { DietaryPreferences } from './components/DietaryPreferences';
-import { Dashboard } from './components/Dashboard';
-import { MapScreen } from './components/MapScreen';
-import { ProfileScreen } from './components/ProfileScreen';
-import { ImageEditorScreen } from './components/ImageEditorScreen';
-import { SocialClubScreen } from './components/SocialClubScreen';
-import { MenuScreen } from './components/MenuScreen';
-import { PaywallScreen } from './components/PaywallScreen';
-import { BottomNav } from './components/BottomNav';
-import { fetchProfile, User } from './services/api';
+import React, { useState, useEffect } from "react";
+import { SplashScreen } from "./components/SplashScreen";
+import { LandingScreen } from "./components/LandingScreen";
+import { LoginScreen } from "./components/LoginScreen";
+import { OnboardingGoals } from "./components/OnboardingGoals";
+import { DietaryPreferences } from "./components/DietaryPreferences";
+import { Dashboard } from "./components/Dashboard";
+import { MapScreen } from "./components/MapScreen";
+import { ProfileScreen } from "./components/ProfileScreen";
+import { ImageEditorScreen } from "./components/ImageEditorScreen";
+import { SocialClubScreen } from "./components/SocialClubScreen";
+import { MenuScreen } from "./components/MenuScreen";
+import { PaywallScreen } from "./components/PaywallScreen";
+import { BottomNav } from "./components/BottomNav";
+import { User } from "./services/api";
+import { useAuth } from "./services/AuthContext";
 
+/**
+ * 🔐 Écrans de l'application
+ */
 export enum Screen {
-  SPLASH = 'SPLASH',
-  LANDING = 'LANDING',
-  LOGIN = 'LOGIN',
-  GOALS = 'GOALS',
-  DIET_PREFS = 'DIET_PREFS',
-  PAYWALL = 'PAYWALL',
-  DASHBOARD = 'DASHBOARD',
-  MAP = 'MAP',
-  PROFILE = 'PROFILE',
-  IMAGE_EDITOR = 'IMAGE_EDITOR',
-  SOCIAL_CLUB = 'SOCIAL_CLUB',
-  MENU = 'MENU',
+  SPLASH = "SPLASH",
+  LANDING = "LANDING",
+  LOGIN = "LOGIN",
+  GOALS = "GOALS",
+  DIET_PREFS = "DIET_PREFS",
+  PAYWALL = "PAYWALL",
+  DASHBOARD = "DASHBOARD",
+  MAP = "MAP",
+  PROFILE = "PROFILE",
+  IMAGE_EDITOR = "IMAGE_EDITOR",
+  SOCIAL_CLUB = "SOCIAL_CLUB",
+  MENU = "MENU",
 }
 
 const App: React.FC = () => {
-  const [currentScreen, setCurrentScreen] = useState<Screen>(Screen.SPLASH);
-  const [authToken, setAuthToken] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [restoringSession, setRestoringSession] = useState(true);
-  const isAuthenticated = Boolean(authToken);
+  /**
+   * 🔐 Auth centralisée
+   * - token stocké en mémoire
+   * - source de vérité unique
+   */
+  const { login, logout, isAuthenticated } = useAuth();
 
-  // Simulate splash screen delay
+  /**
+   * 🎛️ États UI
+   */
+  const [currentScreen, setCurrentScreen] = useState<Screen>(Screen.SPLASH);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [restoringSession, setRestoringSession] = useState(false);
+
+  /**
+   * ⏳ Splash screen (UX)
+   */
   useEffect(() => {
     if (currentScreen === Screen.SPLASH) {
       const timer = setTimeout(() => {
         setCurrentScreen(Screen.LANDING);
       }, 2500);
+
       return () => clearTimeout(timer);
     }
   }, [currentScreen]);
 
-  // Restore session on load
+  /**
+   * 🔐 Protection des écrans sensibles
+   * Empêche toute navigation forcée sans authentification
+   */
   useEffect(() => {
-    const stored = typeof window !== 'undefined' ? window.localStorage.getItem('natty_token') : null;
-    if (!stored) {
-      setRestoringSession(false);
-      return;
+    const protectedScreens: Screen[] = [
+      Screen.DASHBOARD,
+      Screen.MAP,
+      Screen.PROFILE,
+      Screen.IMAGE_EDITOR,
+      Screen.SOCIAL_CLUB,
+      Screen.MENU,
+    ];
+
+    if (!isAuthenticated && protectedScreens.includes(currentScreen)) {
+      setCurrentScreen(Screen.LOGIN);
     }
+  }, [currentScreen, isAuthenticated]);
 
-    setAuthToken(stored);
-    fetchProfile(stored)
-      .then((user) => {
-        setCurrentUser(user);
-        setCurrentScreen(Screen.DASHBOARD);
-      })
-      .catch(() => {
-        if (typeof window !== 'undefined') {
-          window.localStorage.removeItem('natty_token');
-        }
-        setAuthToken(null);
-        setCurrentUser(null);
-      })
-      .finally(() => setRestoringSession(false));
-  }, []);
-
-  const navigate = (screen: Screen) => {
-    setCurrentScreen(screen);
-  };
-
-  const handleAuthSuccess = (user: User, token: string, origin: 'login' | 'register') => {
-    setAuthToken(token);
+  /**
+   * 🔐 Callback après login / register
+   */
+  const handleAuthSuccess = (
+    user: User,
+    token: string,
+    origin: "login" | "register"
+  ) => {
+    login(token); // token en mémoire
     setCurrentUser(user);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('natty_token', token);
-    }
-    setCurrentScreen(origin === 'register' ? Screen.GOALS : Screen.DASHBOARD);
+
+    setCurrentScreen(
+      origin === "register" ? Screen.GOALS : Screen.DASHBOARD
+    );
   };
 
+  /**
+   * 🔐 Déconnexion sécurisée
+   */
   const handleLogout = () => {
-    setAuthToken(null);
+    logout(); // supprime le token mémoire
     setCurrentUser(null);
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem('natty_token');
-    }
     setCurrentScreen(Screen.LANDING);
   };
 
-  const isMainAppScreen = [Screen.DASHBOARD, Screen.MAP, Screen.PROFILE, Screen.IMAGE_EDITOR, Screen.SOCIAL_CLUB, Screen.MENU].includes(currentScreen);
+  /**
+   * 📱 Écrans avec BottomNav
+   */
+  const isMainAppScreen = [
+    Screen.DASHBOARD,
+    Screen.MAP,
+    Screen.PROFILE,
+    Screen.IMAGE_EDITOR,
+    Screen.SOCIAL_CLUB,
+    Screen.MENU,
+  ].includes(currentScreen);
 
   return (
     <div className="relative h-screen w-full overflow-hidden flex flex-col bg-background-light dark:bg-background-dark transition-colors duration-300">
-      
-      {/* Screen Rendering */}
-      <div className={`flex-1 overflow-y-auto ${isMainAppScreen ? 'pb-24' : ''}`}>
+      {/* Écrans */}
+      <div className={`flex-1 overflow-y-auto ${isMainAppScreen ? "pb-24" : ""}`}>
         {currentScreen === Screen.SPLASH && <SplashScreen />}
-        {currentScreen === Screen.LANDING && <LandingScreen onNavigate={() => navigate(Screen.LOGIN)} />}
+
+        {currentScreen === Screen.LANDING && (
+          <LandingScreen onNavigate={() => setCurrentScreen(Screen.LOGIN)} />
+        )}
+
         {currentScreen === Screen.LOGIN && (
           <LoginScreen
-            onAuthSuccess={(user, token, origin) => handleAuthSuccess(user, token, origin)}
+            onAuthSuccess={handleAuthSuccess}
             restoringSession={restoringSession}
           />
         )}
-        {currentScreen === Screen.GOALS && <OnboardingGoals onNavigate={() => navigate(Screen.DIET_PREFS)} />}
-        {currentScreen === Screen.DIET_PREFS && <DietaryPreferences onNavigate={() => navigate(Screen.PAYWALL)} />}
-        {currentScreen === Screen.PAYWALL && <PaywallScreen onNavigate={() => navigate(Screen.DASHBOARD)} />}
-        
-        {currentScreen === Screen.DASHBOARD && <Dashboard onNavigate={(s) => navigate(s)} />}
-        {currentScreen === Screen.MAP && <MapScreen onNavigate={(s) => navigate(s)} />}
-        {currentScreen === Screen.PROFILE && <ProfileScreen user={currentUser} onLogout={handleLogout} />}
-        {currentScreen === Screen.IMAGE_EDITOR && <ImageEditorScreen onBack={() => navigate(Screen.DASHBOARD)} />}
+
+        {currentScreen === Screen.GOALS && (
+          <OnboardingGoals
+            onNavigate={() => setCurrentScreen(Screen.DIET_PREFS)}
+          />
+        )}
+
+        {currentScreen === Screen.DIET_PREFS && (
+          <DietaryPreferences
+            onNavigate={() => setCurrentScreen(Screen.PAYWALL)}
+          />
+        )}
+
+        {currentScreen === Screen.PAYWALL && (
+          <PaywallScreen
+            onNavigate={() => setCurrentScreen(Screen.DASHBOARD)}
+          />
+        )}
+
+        {currentScreen === Screen.DASHBOARD && (
+          <Dashboard onNavigate={(s) => setCurrentScreen(s)} />
+        )}
+
+        {currentScreen === Screen.MAP && (
+          <MapScreen onNavigate={(s) => setCurrentScreen(s)} />
+        )}
+
+        {currentScreen === Screen.PROFILE && (
+          <ProfileScreen user={currentUser} onLogout={handleLogout} />
+        )}
+
+        {currentScreen === Screen.IMAGE_EDITOR && (
+          <ImageEditorScreen
+            onBack={() => setCurrentScreen(Screen.DASHBOARD)}
+          />
+        )}
+
         {currentScreen === Screen.SOCIAL_CLUB && <SocialClubScreen />}
-        {currentScreen === Screen.MENU && <MenuScreen onBack={() => navigate(Screen.MAP)} />}
+
+        {currentScreen === Screen.MENU && (
+          <MenuScreen onBack={() => setCurrentScreen(Screen.MAP)} />
+        )}
       </div>
 
-      {/* Bottom Navigation for Main App Screens */}
+      {/* Navigation basse */}
       {isAuthenticated && isMainAppScreen && (
-        <BottomNav currentScreen={currentScreen} onNavigate={navigate} />
+        <BottomNav
+          currentScreen={currentScreen}
+          onNavigate={(s) => setCurrentScreen(s)}
+        />
       )}
     </div>
   );

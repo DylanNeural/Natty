@@ -3,6 +3,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const Meal = require("../models/Meal.model");
 const UserMealLog = require("../models/UserMealLog.model");
+const auth = require("../security/auth.security");
 
 const router = express.Router();
 
@@ -123,6 +124,37 @@ router.post("/", async (req, res) => {
     return res
       .status(500)
       .json({ message: "Erreur serveur lors de la création du repas" });
+  }
+});
+
+router.get("/", auth, async (req, res) => {
+  try {
+    res.status(200).json({
+      message: "Meals sécurisés",
+      userId: req.user.userId,
+    });
+  } catch (err) {
+    console.error("Erreur meals :", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+
+router.post("/", auth, async (req, res) => {
+  try {
+    // Exemple simple de création
+    const meal = {
+      userId: req.user.userId,
+      ...req.body,
+    };
+
+    res.status(201).json({
+      message: "Meal créé avec succès",
+      meal,
+    });
+  } catch (err) {
+    console.error("Erreur create meal :", err);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 });
 
