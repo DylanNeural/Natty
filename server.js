@@ -1,5 +1,6 @@
 ﻿require("dotenv").config();
 
+const helmet = require("helmet");
 const express = require("express");
 const cors = require("cors");
 
@@ -8,8 +9,11 @@ const connectDB = require("./backend/config/db");
 const authRoutes = require("./backend/routes/auth.routes");
 const mealsRoutes = require("./backend/routes/meals.routes");
 const scanRoutes = require("./backend/routes/scan.routes");
+const mongoSanitize = require("express-mongo-sanitize");
 
 const app = express();
+
+app.use(helmet());
 
 // TRACEUR: si tu ne vois pas ce log, ce n'est pas ce fichier qui tourne
 console.log("✅ ROOT server.js est bien lancé");
@@ -18,7 +22,7 @@ connectDB();
 
 app.use(
   cors({
-    origin: true,
+    origin: ["http://localhost:5173"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -53,3 +57,10 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Serveur backend démarré sur http://localhost:${PORT}`);
 });
+
+// Protection contre les injections NoSQL
+app.use(
+  mongoSanitize({
+    replaceWith: "_",
+  })
+);
