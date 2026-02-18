@@ -1,160 +1,62 @@
 ﻿require("dotenv").config();
 
-const express = require("express");
 const helmet = require("helmet");
+const express = require("express");
 const cors = require("cors");
-const morgan = require("morgan");
-const cookieParser = require("cookie-parser");
-const csrf = require("csurf");
 
 const connectDB = require("./backend/config/db");
-const logger = require("./backend/logs/logger");
-const { globalLimiter, loginLimiter, chatbotLimiter } = require("./backend/security/ratelimit");
 
-// =====================
-// APP
-// =====================
+const authRoutes = require("./backend/routes/auth.routes");
+const mealsRoutes = require("./backend/routes/meals.routes");
+const scanRoutes = require("./backend/routes/scan.routes");
+
 const app = express();
 
-// Vercel est derrière un proxy (nécessaire pour req.ip / rate-limit)
-app.set("trust proxy", 1);
+// TRACEUR: si tu ne vois pas ce log, ce n'est pas ce fichier qui tourne
+console.log("✅ ROOT server.js est bien lancé");
 
-// =====================
-// CONNEXION DB
-// =====================
-connectDB()
-    .then(() => logger.info("✅ MongoDB connecté", {}, "database"))
-    .catch((err) => logger.error("❌ Erreur MongoDB", { error: err.message }, "database"));
+connectDB();
 
-// =====================
-// CSRF
-// =====================
-const isProduction = process.env.NODE_ENV === "production";
-
-const csrfProtection = csrf({
-    cookie: {
-        httpOnly: true,
-        sameSite: isProduction ? "none" : "lax",
-        secure: isProduction,
-    },
-});
-
-// =====================
-// MIDDLEWARES (ordre crucial)
-// =====================
-
-// 1. Sécurité headers
+// === MIDDLEWARES (ordre est CRUCIAL) ===
 app.use(helmet());
-logger.info("Helmet chargé", {}, "middleware");
 
-// 2. CORS (local + Vercel)
-const defaultAllowedOrigins = [
-    "http://localhost:5001",
-    "http://localhost:3000",
-    "http://localhost:3001",
-];
-
-const envAllowedOrigins = (process.env.CORS_ORIGINS || "")
-    .split(",")
-    .map((o) => o.trim())
-    .filter(Boolean);
-
-const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...envAllowedOrigins])];
-
-const corsOptions = {
-    origin: (origin, callback) => {
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin)) return callback(null, true);
-        try {
-            if (new URL(origin).hostname.endsWith(".vercel.app")) return callback(null, true);
-        } catch (_) {
-            return callback(new Error("Origin invalide"));
-        }
-        return callback(new Error(`Origin non autorisée par CORS: ${origin}`));
-    },
+// CORS avec options correctes
+app.use(
+  cors({
+    origin: "http://localhost:3000",
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     optionsSuccessStatus: 200,
-};
+  })
+);
 
-app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions));
-logger.info("CORS configuré", { origins: allowedOrigins }, "middleware");
+// Parsers JSON
+app.use(express.json({ limit: "100mb" }));
+app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 
-// 3. Rate limit global
-app.use(globalLimiter);
-logger.info("Rate limiter global activé", {}, "middleware");
-
-// 4. Cookie parser (requis avant CSRF)
-app.use(cookieParser());
-
-// 5. Logger HTTP
-const morganStream = { write: (msg) => logger.info(msg.trim(), {}, "http") };
-app.use(morgan("combined", { stream: morganStream }));
-
-// 6. Parsers JSON
-app.use(express.json({ limit: "10kb" }));
-app.use(express.urlencoded({ extended: true, limit: "10kb" }));
-logger.info("Parsers activés", { limit: "10kb" }, "middleware");
-
-// =====================
-// CSRF TOKEN ROUTE
-// =====================
-app.get("/api/csrf-token", csrfProtection, (req, res) => {
-    res.json({ csrfToken: req.csrfToken() });
-});
-
-// =====================
-// ROUTES
-// =====================
-app.use("/api/auth", loginLimiter, csrfProtection, require("./backend/routes/auth.routes"));
-logger.info("Route /api/auth chargée", {}, "routes");
-
-app.use("/api/meals", csrfProtection, require("./backend/routes/meals.routes"));
-logger.info("Route /api/meals chargée", {}, "routes");
-
-app.use("/api/chatbot", chatbotLimiter, csrfProtection, require("./backend/routes/chatbot.routes"));
-logger.info("Route /api/chatbot chargée", {}, "routes");
-
+// === ROUTES ===
 app.use("/api/profile", require("./backend/routes/profile.routes"));
-logger.info("Route /api/profile chargée", {}, "routes");
-
 app.use("/api/progress", require("./backend/routes/progress.routes"));
-logger.info("Route /api/progress chargée", {}, "routes");
+app.use("/api/auth", authRoutes);
+app.use("/api/meals", mealsRoutes);
+app.use("/api/chatbot", require("./backend/routes/chatbot.routes"));
 
-app.use("/api", csrfProtection, require("./backend/routes/scan.routes"));
-logger.info("Route /api/scan chargée", {}, "routes");
+// === SCAN ===
+console.log("✅ scanRoutes chargé ?", !!scanRoutes);
+app.use("/api", scanRoutes); // => POST /api/scan
 
-// =====================
-// SONDE / TEST
-// =====================
-app.post("/api/_ping_scan", csrfProtection, (req, res) => {
-    logger.info("_ping_scan appelé", { body: req.body }, "probe");
-    res.json({ ok: true, where: "root server.js", body: req.body });
+// Sonde (si celle-ci marche, Express est OK)
+app.post("/api/_ping_scan", (req, res) => {
+  res.json({ ok: true, where: "root server.js", body: req.body });
 });
 
 app.get("/", (req, res) => {
-    logger.info("Route racine appelée", {}, "server");
-    res.send("API Natty en ligne ✅");
+  res.send("API Natty en ligne ✅");
 });
 
-// =====================
-// GESTION ERREURS
-// =====================
-app.use((err, req, res, next) => {
-    if (err.code === "EBADCSRFTOKEN") {
-        logger.warn("CSRF token invalide", { ip: req.ip }, "security");
-        return res.status(403).json({ message: "CSRF token invalide ou manquant" });
-    }
-    logger.error("Erreur non gérée", { error: err.message }, "server");
-    res.status(500).json({ message: "Erreur interne du serveur" });
-});
-
-// =====================
-// START SERVER
-// =====================
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, "0.0.0.0", () => {
-    logger.info(`✅ Serveur démarré sur http://localhost:${PORT}`, {}, "server");
+// === START SERVER ===
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`✅ Serveur backend démarré sur http://localhost:${PORT}`);
 });

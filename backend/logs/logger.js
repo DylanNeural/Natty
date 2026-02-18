@@ -1,29 +1,33 @@
-// backend/logs/logger.js
-// Logger simple compatible serverless (console uniquement, pas de fichiers)
+const fs = require("fs");
+const path = require("path");
+const winston = require("winston");
 
-const levels = { error: 0, warn: 1, info: 2, debug: 3 };
-const currentLevel = levels[process.env.LOG_LEVEL] ?? levels.info;
 
-function format(level, message, meta = {}, context = "") {
-  const ts = new Date().toISOString();
-  const ctx = context ? `[${context}] ` : "";
-  const metaStr = Object.keys(meta).length ? " " + JSON.stringify(meta) : "";
-  return `${ts} ${level.toUpperCase()} ${ctx}${message}${metaStr}`;
+const projectRoot = path.resolve(__dirname, "../../");
+const logDir = path.join(projectRoot, "logs");
+
+if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir, { recursive: true });
+    console.log("✅ Dossier logs créé:", logDir);
 }
 
-const logger = {
-  error: (message, meta = {}, context = "") => {
-    if (currentLevel >= levels.error) console.error(format("error", message, meta, context));
-  },
-  warn: (message, meta = {}, context = "") => {
-    if (currentLevel >= levels.warn) console.warn(format("warn", message, meta, context));
-  },
-  info: (message, meta = {}, context = "") => {
-    if (currentLevel >= levels.info) console.log(format("info", message, meta, context));
-  },
-  debug: (message, meta = {}, context = "") => {
-    if (currentLevel >= levels.debug) console.log(format("debug", message, meta, context));
-  },
-};
+const logFile = path.join(logDir, "app.log");
+
+
+const logger = winston.createLogger({
+    level: "info",
+    format: winston.format.combine(
+        winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
+        winston.format.printf(
+            ({ timestamp, level, message }) => `${timestamp} [${level.toUpperCase()}] ${message}`
+        )
+    ),
+    transports: [
+        new winston.transports.File({ filename: logFile }),
+        new winston.transports.Console(),
+    ],
+});
+
+logger.info("✅ Logger initialisé et prêt à écrire dans app.log");
 
 module.exports = logger;
