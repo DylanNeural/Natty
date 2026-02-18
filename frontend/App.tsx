@@ -1,95 +1,192 @@
-import React, { useEffect, useState } from 'react';
-import {
-  SafeAreaView,
-  Text,
-  StyleSheet,
-  ActivityIndicator,
-} from 'react-native';
 
-// ⚠️ IMPORTANT :
-// - Si tu es sur un émulateur Android : garde 10.0.2.2
-// - Si un jour tu es sur la même machine (RN Windows, etc.) : tu peux essayer localhost
-const BACKEND_URL = 'http://10.0.2.2:3000/';
-// const BACKEND_URL = 'http://localhost:3000/';
+import React, { useState, useEffect } from "react";
+import { SplashScreen } from "./components/SplashScreen";
+import { LandingScreen } from "./components/LandingScreen";
+import { LoginScreen } from "./components/LoginScreen";
+import { OnboardingGoals } from "./components/OnboardingGoals";
+import { DietaryPreferences } from "./components/DietaryPreferences";
+import { Dashboard } from "./components/Dashboard";
+import { MapScreen } from "./components/MapScreen";
+import { ProfileScreen } from "./components/ProfileScreen";
+import { ImageEditorScreen } from "./components/ImageEditorScreen";
+import { SocialClubScreen } from "./components/SocialClubScreen";
+import { MenuScreen } from "./components/MenuScreen";
+import { PaywallScreen } from "./components/PaywallScreen";
+import { BottomNav } from "./components/BottomNav";
+import { User } from "./services/api";
+import { useAuth } from "./services/AuthContext";
 
-const App = () => {
-  const [data, setData] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+/**
+ * 🔐 Écrans de l'application
+ */
+export enum Screen {
+  SPLASH = "SPLASH",
+  LANDING = "LANDING",
+  LOGIN = "LOGIN",
+  GOALS = "GOALS",
+  DIET_PREFS = "DIET_PREFS",
+  PAYWALL = "PAYWALL",
+  DASHBOARD = "DASHBOARD",
+  MAP = "MAP",
+  PROFILE = "PROFILE",
+  IMAGE_EDITOR = "IMAGE_EDITOR",
+  SOCIAL_CLUB = "SOCIAL_CLUB",
+  MENU = "MENU",
+}
 
+const App: React.FC = () => {
+  /**
+   * 🔐 Auth centralisée
+   * - token stocké en mémoire
+   * - source de vérité unique
+   */
+  const { login, logout, isAuthenticated } = useAuth();
+
+  /**
+   * 🎛️ États UI
+   */
+  const [currentScreen, setCurrentScreen] = useState<Screen>(Screen.SPLASH);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [restoringSession, setRestoringSession] = useState(false);
+
+  /**
+   * ⏳ Splash screen (UX)
+   */
   useEffect(() => {
-    const fetchFromBackend = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    if (currentScreen === Screen.SPLASH) {
+      const timer = setTimeout(() => {
+        setCurrentScreen(Screen.LANDING);
+      }, 2500);
 
-        const response = await fetch(BACKEND_URL);
+      return () => clearTimeout(timer);
+    }
+  }, [currentScreen]);
 
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
+  /**
+   * 🔐 Protection des écrans sensibles
+   * Empêche toute navigation forcée sans authentification
+   */
+  useEffect(() => {
+    const protectedScreens: Screen[] = [
+      Screen.DASHBOARD,
+      Screen.MAP,
+      Screen.PROFILE,
+      Screen.IMAGE_EDITOR,
+      Screen.SOCIAL_CLUB,
+      Screen.MENU,
+    ];
 
-        // Ton backend renvoie juste du texte "API Natty en ligne 🚀"
-        const text = await response.text();
-        setData(text);
-      } catch (err: any) {
-        console.error('Erreur fetch backend:', err);
-        setError(err.message ?? 'Erreur inconnue');
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (!isAuthenticated && protectedScreens.includes(currentScreen)) {
+      setCurrentScreen(Screen.LOGIN);
+    }
+  }, [currentScreen, isAuthenticated]);
 
-    fetchFromBackend();
-  }, []);
+  /**
+   * 🔐 Callback après login / register
+   */
+  const handleAuthSuccess = (
+    user: User,
+    token: string,
+    origin: "login" | "register"
+  ) => {
+    login(token); // token en mémoire
+    setCurrentUser(user);
+
+    setCurrentScreen(
+      origin === "register" ? Screen.GOALS : Screen.DASHBOARD
+    );
+  };
+
+  /**
+   * 🔐 Déconnexion sécurisée
+   */
+  const handleLogout = () => {
+    logout(); // supprime le token mémoire
+    setCurrentUser(null);
+    setCurrentScreen(Screen.LANDING);
+  };
+
+  /**
+   * 📱 Écrans avec BottomNav
+   */
+  const isMainAppScreen = [
+    Screen.DASHBOARD,
+    Screen.MAP,
+    Screen.PROFILE,
+    Screen.IMAGE_EDITOR,
+    Screen.SOCIAL_CLUB,
+    Screen.MENU,
+  ].includes(currentScreen);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Natty - Frontend</Text>
+    <div className="relative h-screen w-full overflow-hidden flex flex-col bg-background-light dark:bg-background-dark transition-colors duration-300">
+      {/* Écrans */}
+      <div className={`flex-1 overflow-y-auto ${isMainAppScreen ? "pb-24" : ""}`}>
+        {currentScreen === Screen.SPLASH && <SplashScreen />}
 
-      {loading && (
-        <ActivityIndicator size="large" />
-      )}
+        {currentScreen === Screen.LANDING && (
+          <LandingScreen onNavigate={() => setCurrentScreen(Screen.LOGIN)} />
+        )}
 
-      {error && (
-        <Text style={styles.error}>
-          Erreur lors de l&apos;appel API : {error}
-        </Text>
-      )}
+        {currentScreen === Screen.LOGIN && (
+          <LoginScreen
+            onAuthSuccess={handleAuthSuccess}
+            restoringSession={restoringSession}
+          />
+        )}
 
-      {data && !loading && !error && (
-        <Text style={styles.text}>
-          Réponse du backend : {'\n'}
-          {data}
-        </Text>
+        {currentScreen === Screen.GOALS && (
+          <OnboardingGoals
+            onNavigate={() => setCurrentScreen(Screen.DIET_PREFS)}
+          />
+        )}
+
+        {currentScreen === Screen.DIET_PREFS && (
+          <DietaryPreferences
+            onNavigate={() => setCurrentScreen(Screen.PAYWALL)}
+          />
+        )}
+
+        {currentScreen === Screen.PAYWALL && (
+          <PaywallScreen
+            onNavigate={() => setCurrentScreen(Screen.DASHBOARD)}
+          />
+        )}
+
+        {currentScreen === Screen.DASHBOARD && (
+          <Dashboard onNavigate={(s) => setCurrentScreen(s)} />
+        )}
+
+        {currentScreen === Screen.MAP && (
+          <MapScreen onNavigate={(s) => setCurrentScreen(s)} />
+        )}
+
+        {currentScreen === Screen.PROFILE && (
+          <ProfileScreen user={currentUser} onLogout={handleLogout} />
+        )}
+
+        {currentScreen === Screen.IMAGE_EDITOR && (
+          <ImageEditorScreen
+            onBack={() => setCurrentScreen(Screen.DASHBOARD)}
+          />
+        )}
+
+        {currentScreen === Screen.SOCIAL_CLUB && <SocialClubScreen />}
+
+        {currentScreen === Screen.MENU && (
+          <MenuScreen onBack={() => setCurrentScreen(Screen.MAP)} />
+        )}
+      </div>
+
+      {/* Navigation basse */}
+      {isAuthenticated && isMainAppScreen && (
+        <BottomNav
+          currentScreen={currentScreen}
+          onNavigate={(s) => setCurrentScreen(s)}
+        />
       )}
-    </SafeAreaView>
+    </div>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#ffffff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 24,
-  },
-  text: {
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  error: {
-    fontSize: 16,
-    color: 'red',
-    textAlign: 'center',
-    paddingHorizontal: 16,
-  },
-});
 
 export default App;
