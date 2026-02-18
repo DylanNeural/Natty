@@ -22,7 +22,7 @@ export interface AuthResponse {
 
 const API_URL =
   (import.meta.env.VITE_API_URL as string | undefined) ||
-  "http://localhost:3000";
+  "http://localhost:5000";
 
 /**
  * 🔐 Fonction générique sécurisée pour les appels API
