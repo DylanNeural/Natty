@@ -1,6 +1,7 @@
 // backend/routes/auth.routes.js
+
 const express = require("express");
-const bcrypt = require("bcryptjs");
+const bcrypt = require("bcrypt"); // <-- bcrypt natif
 const jwt = require("jsonwebtoken");
 const User = require("../models/User.model");
 const { loginLimiter } = require("../security/ratelimit");
@@ -11,30 +12,50 @@ const verifyRecaptcha = require("../security/recaptcha");
 
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-natty";
+/* ================================
+   CONFIG
+================================ */
+
+if (!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET manquant dans le .env");
+}
+
+const JWT_SECRET = process.env.JWT_SECRET;
+const SALT_ROUNDS = 12; // recommandé 12 en 2026
 
 function generateToken(userId) {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign({ userId }, JWT_SECRET, {
+    expiresIn: "7d",
+  });
 }
 
 /**
  * POST /api/auth/register
- * Body JSON : { name, email, password, captchaToken }
+ * Body JSON : { name, email, password }
  */
 router.post(
   "/register",
   [
-  body("name")
-    .trim()
-    .notEmpty()
-    .withMessage("Le nom est obligatoire"),
-  body("email")
-    .isEmail()
-    .withMessage("Email invalide"),
-  body("password")
-    .isLength({ min: 8 })
-    .withMessage("Mot de passe trop court"),
-],
+    body("name")
+      .trim()
+      .notEmpty()
+      .withMessage("Le nom est obligatoire"),
+
+    body("email")
+      .isEmail()
+      .withMessage("Email invalide")
+      .normalizeEmail(),
+
+    body("password")
+      .isStrongPassword({
+        minLength: 8,
+        minLowercase: 1,
+        minUppercase: 1,
+        minNumbers: 1,
+        minSymbols: 1,
+      })
+      .withMessage("Mot de passe trop faible"),
+  ],
   validate,
   async (req, res) => {
     // 🔐 CAPTCHA VERIFICATION
@@ -46,12 +67,13 @@ router.post(
 
     try {
       const { name, email, password } = req.body;
+
       const existingUser = await User.findOne({ email });
       if (existingUser) {
         return res.status(409).json({ message: "Utilisateur déjà existant" });
       }
 
-      const passwordHash = await bcrypt.hash(password, 10);
+      const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
       const user = await User.create({
         name,
@@ -71,20 +93,20 @@ router.post(
         },
         token,
       });
+
     } catch (err) {
       console.error("Erreur register :", err);
-      return res
-        .status(500)
-        .json({ message: "Erreur serveur pendant l'inscription" });
+      return res.status(500).json({
+        message: "Erreur serveur pendant l'inscription",
+      });
     }
   }
 );
 
+/* ================================
+   LOGIN
+================================ */
 
-/**
- * POST /api/auth/login
- * Body JSON : { email, password }
- */
 router.post(
   "/login",
   loginLimiter,
@@ -92,57 +114,62 @@ router.post(
     body("email")
       .isEmail()
       .withMessage("Email invalide"),
+
     body("password")
-      .isLength({ min: 8 })
-      .withMessage("Mot de passe trop court"),
+      .notEmpty()
+      .withMessage("Mot de passe requis"),
   ],
   validate,
   async (req, res) => {
-  
-  const { captchaToken } = req.body;
 
-  const isHuman = await verifyRecaptcha(captchaToken);
-  if (!isHuman) {
-    return res.status(403).json({ message: "Captcha invalide" });
+    try {
+      const { email, password, captchaToken } = req.body;
+
+      /* ===== reCAPTCHA ===== */
+      const isHuman = await verifyRecaptcha(captchaToken);
+      if (!isHuman) {
+        return res.status(403).json({ message: "Captcha invalide" });
+      }
+
+      /* ===== Recherche user ===== */
+      const user = await User.findOne({ email });
+
+      // Protection contre timing attack
+      const fakeHash =
+        "$2b$12$CwTycUXWue0Thq9StjUM0uJ8nQjQjQjQjQjQjQjQjQjQjQjQjQjQj";
+
+      if (!user) {
+        await bcrypt.compare(password, fakeHash);
+        return res.status(401).json({ message: "Identifiants invalides" });
+      }
+
+      /* ===== Vérification mot de passe ===== */
+      const isValid = await bcrypt.compare(password, user.passwordHash);
+
+      if (!isValid) {
+        return res.status(401).json({ message: "Identifiants invalides" });
+      }
+
+      /* ===== Génération JWT ===== */
+      const token = generateToken(user._id);
+
+      return res.status(200).json({
+        message: "Connexion réussie",
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+        },
+        token,
+      });
+
+    } catch (err) {
+      console.error("Erreur login :", err);
+      return res.status(500).json({
+        message: "Erreur serveur pendant la connexion",
+      });
+    }
   }
-
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email et mot de passe sont obligatoires" });
-    }
-
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ message: "Identifiants invalides" });
-    }
-
-    const isValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isValid) {
-      return res.status(401).json({ message: "Identifiants invalides" });
-    }
-
-    const token = generateToken(user._id);
-
-    return res.json({
-      message: "Connexion réussie",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
-      token,
-    });
-  } catch (err) {
-    console.error("Erreur login :", err);
-    return res
-      .status(500)
-      .json({ message: "Erreur serveur pendant la connexion" });
-  }
-});
-
+);
 
 module.exports = router;

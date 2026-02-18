@@ -1,7 +1,7 @@
 const { validationResult } = require("express-validator");
 
 /**
- * 🔐 Bloque données invalides / injections
+ *  Bloque données invalides / injections
  */
 module.exports = (req, res, next) => {
   const errors = validationResult(req);
