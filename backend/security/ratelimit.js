@@ -9,3 +9,12 @@ exports.loginLimiter = rateLimit({
   max: 5,
   message: "Trop de tentatives, réessaie plus tard",
 });
+
+/**
+ * Chatbot: limite de débit pour éviter l'abus
+ */
+exports.chatbotLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 12,
+  message: "Trop de messages envoyés au chatbot, réessaie dans 1 minute",
+});

@@ -12,6 +12,7 @@ import { ImageEditorScreen } from "./components/ImageEditorScreen";
 import { SocialClubScreen } from "./components/SocialClubScreen";
 import { MenuScreen } from "./components/MenuScreen";
 import { PaywallScreen } from "./components/PaywallScreen";
+import { ChatbotPage } from "./components/ChatbotPage";
 import { BottomNav } from "./components/BottomNav";
 import { User } from "./services/api";
 import { useAuth } from "./services/AuthContext";
@@ -30,6 +31,7 @@ export enum Screen {
   MAP = "MAP",
   PROFILE = "PROFILE",
   IMAGE_EDITOR = "IMAGE_EDITOR",
+  CHATBOT = "CHATBOT",
   SOCIAL_CLUB = "SOCIAL_CLUB",
   MENU = "MENU",
 }
@@ -47,6 +49,7 @@ const App: React.FC = () => {
    */
   const [currentScreen, setCurrentScreen] = useState<Screen>(Screen.SPLASH);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [chatProductContext, setChatProductContext] = useState<unknown | null>(null);
   const [restoringSession, setRestoringSession] = useState(false);
 
   /**
@@ -72,6 +75,7 @@ const App: React.FC = () => {
       Screen.MAP,
       Screen.PROFILE,
       Screen.IMAGE_EDITOR,
+      Screen.CHATBOT,
       Screen.SOCIAL_CLUB,
       Screen.MENU,
     ];
@@ -112,11 +116,12 @@ const App: React.FC = () => {
   const isMainAppScreen = [
     Screen.DASHBOARD,
     Screen.MAP,
-    Screen.PROFILE,
-    Screen.IMAGE_EDITOR,
-    Screen.SOCIAL_CLUB,
-    Screen.MENU,
-  ].includes(currentScreen);
+      Screen.PROFILE,
+      Screen.IMAGE_EDITOR,
+      Screen.CHATBOT,
+      Screen.SOCIAL_CLUB,
+      Screen.MENU,
+    ].includes(currentScreen);
 
   return (
     <div className="relative h-screen w-full overflow-hidden flex flex-col bg-background-light dark:bg-background-dark transition-colors duration-300">
@@ -154,7 +159,13 @@ const App: React.FC = () => {
         )}
 
         {currentScreen === Screen.DASHBOARD && (
-          <Dashboard onNavigate={(s) => setCurrentScreen(s)} />
+          <Dashboard
+            onNavigate={(s) => setCurrentScreen(s)}
+            onAskCoach={(productContext) => {
+              setChatProductContext(productContext || null);
+              setCurrentScreen(Screen.CHATBOT);
+            }}
+          />
         )}
 
         {currentScreen === Screen.MAP && (
@@ -168,6 +179,17 @@ const App: React.FC = () => {
         {currentScreen === Screen.IMAGE_EDITOR && (
           <ImageEditorScreen
             onBack={() => setCurrentScreen(Screen.DASHBOARD)}
+            onAskCoach={(productContext) => {
+              setChatProductContext(productContext || null);
+              setCurrentScreen(Screen.CHATBOT);
+            }}
+          />
+        )}
+
+        {currentScreen === Screen.CHATBOT && (
+          <ChatbotPage
+            onBack={() => setCurrentScreen(Screen.DASHBOARD)}
+            initialProductContext={chatProductContext || undefined}
           />
         )}
 

@@ -39,6 +39,7 @@ app.use("/api/profile", require("./backend/routes/profile.routes"));
 app.use("/api/progress", require("./backend/routes/progress.routes"));
 app.use("/api/auth", authRoutes);
 app.use("/api/meals", mealsRoutes);
+app.use("/api/chatbot", require("./backend/routes/chatbot.routes"));
 
 // === SCAN ===
 console.log("✅ scanRoutes chargé ?", !!scanRoutes);
