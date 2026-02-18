@@ -15,3 +15,22 @@
 2026-02-18 14:21:04 [INFO] scanRoutes chargé ?
 2026-02-18 14:21:04 [INFO] ✅ Serveur backend démarré sur http://localhost:5000
 2026-02-18 14:21:05 [INFO] ✅ MongoDB connecté
+2026-02-18 15:35:30 [INFO] ✅ Logger initialisé et prêt à écrire dans app.log
+2026-02-18 15:35:30 [INFO] ✅ Serveur backend démarré
+2026-02-18 15:35:30 [WARN] Tentative suspecte | {"ip":"192.168.1.10"}
+2026-02-18 15:35:30 [ERROR] Erreur DB | {"error":"Timeout Mongo"}
+2026-02-18 15:35:30 [INFO] ✅ Logger initialisé et prêt à écrire dans app.log
+2026-02-18 15:35:31 [INFO] ✅ ROOT server.js est bien lancé
+2026-02-18 15:35:31 [INFO] Helmet middleware chargé
+2026-02-18 15:35:31 [INFO] CORS middleware configuré | {"origin":"http://localhost:3000"}
+2026-02-18 15:35:31 [INFO] Parsers JSON et URL-encoded activés | {"limit":"100mb"}
+2026-02-18 15:35:31 [INFO] Route /api/profile chargée
+2026-02-18 15:35:31 [INFO] Route /api/progress chargée
+2026-02-18 15:35:31 [INFO] Route /api/auth chargée
+2026-02-18 15:35:31 [INFO] Route /api/meals chargée
+2026-02-18 15:35:31 [INFO] Route /api/chatbot chargée
+2026-02-18 15:35:31 [INFO] scanRoutes chargé ? | {"loaded":true}
+2026-02-18 15:35:31 [INFO] ✅ Serveur backend démarré sur http://localhost:5000
+2026-02-18 15:35:31 [INFO] ✅ MongoDB connecté
+2026-02-18 15:36:22 [INFO] ::1 - - [18/Feb/2026:14:36:22 +0000] "OPTIONS /api/auth/login HTTP/1.1" 200 0 "http://localhost:3000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 OPR/127.0.0.0"
+2026-02-18 15:36:22 [INFO] ::1 - - [18/Feb/2026:14:36:22 +0000] "POST /api/auth/login HTTP/1.1" 401 36 "http://localhost:3000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 OPR/127.0.0.0"
