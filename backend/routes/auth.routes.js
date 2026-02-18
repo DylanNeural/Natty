@@ -3,6 +3,11 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User.model");
+const { loginLimiter } = require("../security/ratelimit");
+const { body } = require("express-validator");
+const validate = require("../security/validate");
+const verifyRecaptcha = require("../security/recaptcha");
+
 
 const router = express.Router();
 
@@ -16,55 +21,79 @@ function generateToken(userId) {
  * POST /api/auth/register
  * Body JSON : { name, email, password }
  */
-router.post("/register", async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
+router.post(
+  "/register",
+  [
+  body("name")
+    .trim()
+    .notEmpty()
+    .withMessage("Le nom est obligatoire"),
+  body("email")
+    .isEmail()
+    .withMessage("Email invalide"),
+  body("password")
+    .isLength({ min: 8 })
+    .withMessage("Mot de passe trop court"),
+],
+  validate,
+  async (req, res) => {
+    try {
+      const { name, email, password } = req.body;
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(409).json({ message: "Utilisateur déjà existant" });
+      }
 
-    if (!name || !email || !password) {
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      const user = await User.create({
+        name,
+        email,
+        passwordHash,
+      });
+
+      return res.status(201).json({
+        message: "Utilisateur créé",
+        user: {
+          id: user._id,
+          email: user.email,
+        },
+      });
+    } catch (err) {
+      console.error("Erreur register :", err);
       return res
-        .status(400)
-        .json({ message: "Nom, email et mot de passe sont obligatoires" });
+        .status(500)
+        .json({ message: "Erreur serveur pendant l'inscription" });
     }
-
-    const existing = await User.findOne({ email });
-    if (existing) {
-      return res
-        .status(409)
-        .json({ message: "Un compte existe déjà avec cet email" });
-    }
-
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    const user = await User.create({
-      name,
-      email,
-      passwordHash,
-    });
-
-    const token = generateToken(user._id);
-
-    return res.status(201).json({
-      message: "Utilisateur créé",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
-      token,
-    });
-  } catch (err) {
-    console.error("Erreur register :", err);
-    return res
-      .status(500)
-      .json({ message: "Erreur serveur pendant l'inscription" });
   }
-});
+);
+
 
 /**
  * POST /api/auth/login
  * Body JSON : { email, password }
  */
-router.post("/login", async (req, res) => {
+router.post(
+  "/login",
+  loginLimiter,
+  [
+    body("email")
+      .isEmail()
+      .withMessage("Email invalide"),
+    body("password")
+      .isLength({ min: 8 })
+      .withMessage("Mot de passe trop court"),
+  ],
+  validate,
+  async (req, res) => {
+  
+  const { captchaToken } = req.body;
+
+  const isHuman = await verifyRecaptcha(captchaToken);
+  if (!isHuman) {
+    return res.status(403).json({ message: "Captcha invalide" });
+  }
+
   try {
     const { email, password } = req.body;
 
@@ -102,5 +131,6 @@ router.post("/login", async (req, res) => {
       .json({ message: "Erreur serveur pendant la connexion" });
   }
 });
+
 
 module.exports = router;
