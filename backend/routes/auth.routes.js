@@ -19,7 +19,7 @@ function generateToken(userId) {
 
 /**
  * POST /api/auth/register
- * Body JSON : { name, email, password }
+ * Body JSON : { name, email, password, captchaToken }
  */
 router.post(
   "/register",
@@ -37,6 +37,13 @@ router.post(
 ],
   validate,
   async (req, res) => {
+    // 🔐 CAPTCHA VERIFICATION
+    const { captchaToken } = req.body;
+    const isHuman = await verifyRecaptcha(captchaToken);
+    if (!isHuman) {
+      return res.status(403).json({ message: "Captcha invalide" });
+    }
+
     try {
       const { name, email, password } = req.body;
       const existingUser = await User.findOne({ email });
@@ -52,12 +59,17 @@ router.post(
         passwordHash,
       });
 
+      // 🔐 GENERATE TOKEN
+      const token = generateToken(user._id);
+
       return res.status(201).json({
         message: "Utilisateur créé",
         user: {
           id: user._id,
+          name: user.name,
           email: user.email,
         },
+        token,
       });
     } catch (err) {
       console.error("Erreur register :", err);
