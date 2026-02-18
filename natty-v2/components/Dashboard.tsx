@@ -5,9 +5,10 @@ import { scanBarcode } from '../services/api';
 
 interface Props {
   onNavigate: (screen: Screen) => void;
+  onAskCoach?: (productContext?: unknown) => void;
 }
 
-export const Dashboard: React.FC<Props> = ({ onNavigate }) => {
+export const Dashboard: React.FC<Props> = ({ onNavigate, onAskCoach }) => {
   const [barcode, setBarcode] = useState('');
   const [scanResult, setScanResult] = useState<any>(null);
   const [scanLoading, setScanLoading] = useState(false);
@@ -173,6 +174,12 @@ export const Dashboard: React.FC<Props> = ({ onNavigate }) => {
                 <NutItem label="Sel" value={scanResult.valeurs_nutritionnelles.sel_g} suffix="g" />
               </div>
             )}
+            <button
+              onClick={() => onAskCoach?.(scanResult)}
+              className="mt-2 h-10 px-4 rounded-xl bg-primary text-white font-bold shadow-sm"
+            >
+              Demander au coach
+            </button>
           </div>
         )}
       </div>

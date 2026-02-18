@@ -3,9 +3,10 @@ import { scanImage } from '../services/api';
 
 interface Props {
   onBack: () => void;
+  onAskCoach?: (productContext?: unknown) => void;
 }
 
-export const ImageEditorScreen: React.FC<Props> = ({ onBack }) => {
+export const ImageEditorScreen: React.FC<Props> = ({ onBack, onAskCoach }) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [mimeType, setMimeType] = useState<string>('');
   const [result, setResult] = useState<any | null>(null);
@@ -92,14 +93,22 @@ export const ImageEditorScreen: React.FC<Props> = ({ onBack }) => {
                       return <p className="text-gray-600 dark:text-gray-300">{result.description || 'Analyse terminée.'}</p>;
                     }
                     return (
-                      <div className="grid grid-cols-3 gap-4">
-                        <MacroItem label="Énergie" value={n.energie_kcal} suffix="kcal" color="text-primary" />
-                        <MacroItem label="Protéines" value={n.proteines_g} suffix="g" color="text-warning" />
-                        <MacroItem label="Glucides" value={n.glucides_g} suffix="g" color="text-accent" />
-                        <MacroItem label="Lipides" value={n.lipides_g} suffix="g" color="text-secondary" />
-                        <MacroItem label="Sucres" value={n.dont_sucres_g} suffix="g" color="text-primary" />
-                        <MacroItem label="Sel" value={n.sel_g} suffix="g" color="text-secondary" />
-                      </div>
+                      <>
+                        <div className="grid grid-cols-3 gap-4">
+                          <MacroItem label="Énergie" value={n.energie_kcal} suffix="kcal" color="text-primary" />
+                          <MacroItem label="Protéines" value={n.proteines_g} suffix="g" color="text-warning" />
+                          <MacroItem label="Glucides" value={n.glucides_g} suffix="g" color="text-accent" />
+                          <MacroItem label="Lipides" value={n.lipides_g} suffix="g" color="text-secondary" />
+                          <MacroItem label="Sucres" value={n.dont_sucres_g} suffix="g" color="text-primary" />
+                          <MacroItem label="Sel" value={n.sel_g} suffix="g" color="text-secondary" />
+                        </div>
+                        <button
+                          onClick={() => onAskCoach?.(result)}
+                          className="mt-4 h-10 px-4 rounded-xl bg-primary text-white font-bold shadow-sm"
+                        >
+                          Demander au coach
+                        </button>
+                      </>
                     );
                   })()}
                 </div>
