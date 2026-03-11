@@ -19,7 +19,6 @@ const logDir = path.join(projectRoot, "logs");
 // Crée le dossier logs si inexistant
 if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir, { recursive: true });
-    console.log("✅ Dossier logs créé :", logDir);
 }
 
 // Fichier de logs

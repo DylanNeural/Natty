@@ -8,7 +8,6 @@ const logDir = path.join(projectRoot, "logs");
 
 if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir, { recursive: true });
-    console.log("✅ Dossier logs créé:", logDir);
 }
 
 const logFile = path.join(logDir, "app.log");
