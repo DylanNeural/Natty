@@ -7,6 +7,7 @@ const rateLimit = require("express-rate-limit");
 exports.loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
+  validate: { forwardedHeader: false },
   message: "Trop de tentatives, réessaie plus tard",
 });
 
@@ -16,11 +17,13 @@ exports.loginLimiter = rateLimit({
 exports.chatbotLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 12,
+  validate: { forwardedHeader: false },
   message: "Trop de messages envoyés au chatbot, réessaie dans 1 minute",
 });
 exports.globalLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 100,
+  validate: { forwardedHeader: false },
   standardHeaders: false,
   legacyHeaders: false,
   handler: (req, res) => {
