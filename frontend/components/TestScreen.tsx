@@ -18,9 +18,18 @@ const statusClasses: Record<TestStatus, string> = {
   error: "text-red-600 dark:text-red-400",
 };
 
-const API_URL =
-  ((import.meta as any).env?.VITE_API_URL as string | undefined) ||
-  "http://localhost:5000";
+function normalizeApiBaseUrl(rawUrl?: string) {
+  const fallback = "http://localhost:5000";
+  const value = (rawUrl || fallback).trim();
+  return value.replace(/\/+$/, "");
+}
+
+function buildApiUrl(path: string) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${API_URL}${normalizedPath}`;
+}
+
+const API_URL = normalizeApiBaseUrl((import.meta as any).env?.VITE_API_URL as string | undefined);
 
 export const TestScreen: React.FC<Props> = ({ onBack }) => {
   const [running, setRunning] = useState(false);
@@ -63,7 +72,7 @@ export const TestScreen: React.FC<Props> = ({ onBack }) => {
     evaluator?: (res: Response, body: unknown) => { status: TestStatus; summary: string }
   ) => {
     const method = (init.method || "GET").toUpperCase();
-    const url = `${API_URL}${path}`;
+    const url = buildApiUrl(path);
 
     appendLog(`\n=== ${name} ===`);
     appendLog(`REQ ${method} ${url}`);
