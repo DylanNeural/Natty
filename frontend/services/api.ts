@@ -24,6 +24,31 @@ const API_URL =
   (import.meta.env.VITE_API_URL as string | undefined) ||
   "http://localhost:5000";
 
+let csrfTokenCache: string | null = null;
+
+async function getCsrfToken(forceRefresh = false): Promise<string> {
+  if (!forceRefresh && csrfTokenCache) {
+    return csrfTokenCache;
+  }
+
+  const res = await fetch(`${API_URL}/api/csrf-token`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    throw new Error(`Impossible de récupérer le token CSRF (${res.status})`);
+  }
+
+  const data = (await res.json()) as { csrfToken?: string };
+  if (!data?.csrfToken) {
+    throw new Error("Token CSRF manquant dans la réponse serveur");
+  }
+
+  csrfTokenCache = data.csrfToken;
+  return csrfTokenCache;
+}
+
 /**
  * 🔐 Fonction générique sécurisée pour les appels API
  */
@@ -32,16 +57,34 @@ async function request<T>(
   options: RequestInit = {},
   token?: string
 ): Promise<T> {
+  const method = (options.method || "GET").toUpperCase();
+  const needsCsrf = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
+
   const headers: HeadersInit = {
     "Content-Type": "application/json",
     ...(options.headers || {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  if (needsCsrf) {
+    const csrfToken = await getCsrfToken();
+    (headers as Record<string, string>)["X-CSRF-Token"] = csrfToken;
+  }
+
+  const runFetch = async () =>
+    fetch(`${API_URL}${path}`, {
+      ...options,
+      headers,
+      credentials: "include",
+    });
+
+  let res = await runFetch();
+
+  if (needsCsrf && res.status === 403) {
+    const csrfToken = await getCsrfToken(true);
+    (headers as Record<string, string>)["X-CSRF-Token"] = csrfToken;
+    res = await runFetch();
+  }
 
   let data: any = null;
   try {
