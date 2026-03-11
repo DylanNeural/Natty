@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from "react";
-import ReCAPTCHA from "react-google-recaptcha";
 
 interface Props {
   onBack: () => void;
@@ -34,7 +33,6 @@ function buildApiUrl(path: string) {
 }
 
 const API_URL = normalizeApiBaseUrl((import.meta as any).env?.VITE_API_URL as string | undefined);
-const RECAPTCHA_SITE_KEY = ((import.meta as any).env?.VITE_RECAPTCHA_SITE_KEY as string | undefined) || "";
 
 export const TestScreen: React.FC<Props> = ({ onBack }) => {
   const [running, setRunning] = useState(false);
@@ -43,7 +41,6 @@ export const TestScreen: React.FC<Props> = ({ onBack }) => {
   const [results, setResults] = useState<TestItem[]>([]);
   const [testEmail, setTestEmail] = useState(DEFAULT_TEST_EMAIL);
   const [testPassword, setTestPassword] = useState(DEFAULT_TEST_PASSWORD);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const logsText = useMemo(() => logs.join("\n"), [logs]);
 
@@ -272,12 +269,6 @@ export const TestScreen: React.FC<Props> = ({ onBack }) => {
       return;
     }
 
-    if (!captchaToken) {
-      pushResult("Login réel (Dylan)", "error", "Captcha requis avant test login réel");
-      appendLog("Login réel annulé: captchaToken manquant");
-      return;
-    }
-
     setRunningRealLogin(true);
 
     const csrfResponse = await runRequest(
@@ -314,7 +305,7 @@ export const TestScreen: React.FC<Props> = ({ onBack }) => {
         body: JSON.stringify({
           email: testEmail.trim(),
           password: testPassword,
-          captchaToken,
+          captchaToken: "bypass-token",
         }),
       },
       (res, body) => {
@@ -323,7 +314,7 @@ export const TestScreen: React.FC<Props> = ({ onBack }) => {
           return { status: "ok", summary: "Connexion réelle OK (token reçu)" };
         }
         if (res.status === 403 && text.toLowerCase().includes("captcha")) {
-          return { status: "error", summary: "Captcha invalide/expiré (regénère le captcha)" };
+          return { status: "error", summary: "Captcha refusé: active RECAPTCHA_BYPASS=true côté backend" };
         }
         if (res.status === 403 && text.toLowerCase().includes("csrf")) {
           return { status: "error", summary: "CSRF rejeté sur login réel" };
@@ -397,7 +388,11 @@ export const TestScreen: React.FC<Props> = ({ onBack }) => {
       <div className="rounded-2xl p-4 bg-white dark:bg-card-dark ring-1 ring-gray-200 dark:ring-gray-800">
         <h2 className="text-sm font-bold text-text-light dark:text-text-dark">Test connexion réelle</h2>
         <p className="mt-1 text-xs text-text-light/70 dark:text-text-dark/70">
-          Vérifie la vraie connexion avec tes identifiants (captcha requis).
+          Vérifie la vraie connexion avec tes identifiants (sans captcha côté UI).
+        </p>
+
+        <p className="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
+          Nécessite RECAPTCHA_BYPASS=true côté backend pour réussir en mode sans captcha.
         </p>
 
         <div className="mt-3 grid gap-2">
@@ -418,19 +413,9 @@ export const TestScreen: React.FC<Props> = ({ onBack }) => {
             disabled={running || runningRealLogin}
           />
 
-          {RECAPTCHA_SITE_KEY ? (
-            <ReCAPTCHA
-              sitekey={RECAPTCHA_SITE_KEY}
-              onChange={(token) => setCaptchaToken(token)}
-              onExpired={() => setCaptchaToken(null)}
-            />
-          ) : (
-            <p className="text-xs text-red-500">VITE_RECAPTCHA_SITE_KEY manquant: test login réel impossible.</p>
-          )}
-
           <button
             onClick={runRealLoginTest}
-            disabled={running || runningRealLogin || !RECAPTCHA_SITE_KEY}
+            disabled={running || runningRealLogin}
             className="rounded-xl px-4 py-2 bg-primary text-white text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {runningRealLogin ? "Test login en cours..." : "Tester connexion réelle"}
