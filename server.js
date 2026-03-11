@@ -1,7 +1,5 @@
 ﻿require("dotenv").config();
 
-const fs = require("fs");
-const path = require("path");
 const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
@@ -24,12 +22,6 @@ const app = express();
 connectDB()
     .then(() => logger.info("✅ MongoDB connecté", {}, "database"))
     .catch((err) => logger.error("❌ Erreur MongoDB", { error: err.message }, "database"));
-
-// =====================
-// LOGS DIR
-// =====================
-const logDir = path.join(__dirname, "logs");
-if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
 
 // =====================
 // CSRF
