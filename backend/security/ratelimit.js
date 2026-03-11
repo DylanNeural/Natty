@@ -18,3 +18,12 @@ exports.chatbotLimiter = rateLimit({
   max: 12,
   message: "Trop de messages envoyés au chatbot, réessaie dans 1 minute",
 });
+exports.globalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  standardHeaders: false,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({ message: "Trop de requêtes" });
+  }
+});
