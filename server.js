@@ -63,6 +63,10 @@ connectDB()
 // =====================
 // MIDDLEWARES
 // =====================
+// Dans server.js, après les imports
+const morgan = require("morgan");
+const morganStream = { write: (msg) => logger.info(msg.trim(), {}, "http") };
+app.use(morgan("combined", { stream: morganStream }));
 
 // Helmet
 app.use(helmet());
