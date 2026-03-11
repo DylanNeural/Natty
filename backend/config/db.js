@@ -2,11 +2,11 @@
 const mongoose = require("mongoose");
 
 const MONGODB_URI = process.env.MONGODB_URI;
-const MONGODB_SERVER_SELECTION_TIMEOUT_MS = Number(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS || 30000);
-const MONGODB_CONNECT_TIMEOUT_MS = Number(process.env.MONGODB_CONNECT_TIMEOUT_MS || 30000);
+const MONGODB_SERVER_SELECTION_TIMEOUT_MS = Number(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS || 10000);
+const MONGODB_CONNECT_TIMEOUT_MS = Number(process.env.MONGODB_CONNECT_TIMEOUT_MS || 10000);
 const MONGODB_SOCKET_TIMEOUT_MS = Number(process.env.MONGODB_SOCKET_TIMEOUT_MS || 45000);
-const MONGODB_CONNECT_RETRIES = Number(process.env.MONGODB_CONNECT_RETRIES || 2);
-const MONGODB_CONNECT_RETRY_DELAY_MS = Number(process.env.MONGODB_CONNECT_RETRY_DELAY_MS || 2000);
+const MONGODB_CONNECT_RETRIES = Number(process.env.MONGODB_CONNECT_RETRIES || 0);
+const MONGODB_CONNECT_RETRY_DELAY_MS = Number(process.env.MONGODB_CONNECT_RETRY_DELAY_MS || 1000);
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));

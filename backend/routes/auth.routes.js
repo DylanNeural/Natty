@@ -3,6 +3,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User.model");
+const connectDB = require("../config/db");
 const { loginLimiter } = require("../security/ratelimit");
 const { body } = require("express-validator");
 const validate = require("../security/validate");
@@ -45,6 +46,8 @@ router.post(
     }
 
     try {
+      await connectDB();
+
       const { name, email, password } = req.body;
       const existingUser = await User.findOne({ email });
       if (existingUser) {
@@ -75,7 +78,10 @@ router.post(
       console.error("Erreur register :", err);
       return res
         .status(500)
-        .json({ message: "Erreur serveur pendant l'inscription" });
+        .json({
+          message: "Erreur serveur pendant l'inscription",
+          detail: err?.message || "Erreur inconnue",
+        });
     }
   }
 );
@@ -107,6 +113,8 @@ router.post(
   }
 
   try {
+    await connectDB();
+
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -140,7 +148,10 @@ router.post(
     console.error("Erreur login :", err);
     return res
       .status(500)
-      .json({ message: "Erreur serveur pendant la connexion" });
+      .json({
+        message: "Erreur serveur pendant la connexion",
+        detail: err?.message || "Erreur inconnue",
+      });
   }
 });
 
