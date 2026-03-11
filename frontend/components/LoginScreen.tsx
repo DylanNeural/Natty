@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { login, register, User } from '../services/api';
 import ReCAPTCHA from "react-google-recaptcha";
 
@@ -17,6 +17,7 @@ export const LoginScreen: React.FC<Props> = ({ onAuthSuccess, restoringSession =
 
   // 🔐 CAPTCHA
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const recaptchaRef = useRef<any>(null);
 
   // 🔐 Validation front
   const validateForm = () => {
@@ -35,8 +36,14 @@ export const LoginScreen: React.FC<Props> = ({ onAuthSuccess, restoringSession =
       return false;
     }
 
-    if (password.length < 8) {
-      setError("Le mot de passe doit contenir au moins 8 caractères");
+    // Aligné avec `express-validator` (isStrongPassword) côté backend.
+    const hasLower = /[a-z]/.test(password);
+    const hasUpper = /[A-Z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    const hasSymbol = /[^A-Za-z0-9]/.test(password);
+
+    if (password.length < 8 || !hasLower || !hasUpper || !hasNumber || !hasSymbol) {
+      setError("Mot de passe: 8+ caractères avec majuscule, minuscule, chiffre et symbole");
       return false;
     }
 
@@ -48,9 +55,13 @@ export const LoginScreen: React.FC<Props> = ({ onAuthSuccess, restoringSession =
 
     if (!validateForm()) return;
 
+    // Récupère la valeur depuis le widget pour éviter les tokens expirés.
+    const captchaFromWidget = recaptchaRef.current?.getValue?.();
+    const effectiveCaptchaToken = (captchaFromWidget || captchaToken || "").trim();
+
     // 🔐 Blocage si captcha non validé
-    if (!captchaToken) {
-      setError("Veuillez valider le captcha");
+    if (!effectiveCaptchaToken) {
+      setError("Captcha expiré ou manquant: cochez à nouveau la case");
       return;
     }
 
@@ -59,13 +70,14 @@ export const LoginScreen: React.FC<Props> = ({ onAuthSuccess, restoringSession =
 
       const response =
         mode === "login"
-          ? await login(email, password, captchaToken)
-          : await register(name.trim(), email, password, captchaToken);
+          ? await login(email, password, effectiveCaptchaToken)
+          : await register(name.trim(), email, password, effectiveCaptchaToken);
 
       onAuthSuccess(response.user, response.token, mode);
-    } catch {
-      setError("Identifiants invalides ou compte inexistant");
+    } catch (err: any) {
+      setError(err?.message || "Erreur lors de l'authentification");
       setCaptchaToken(null);
+      recaptchaRef.current?.reset?.();
     } finally {
       setIsLoading(false);
     }
@@ -171,6 +183,7 @@ export const LoginScreen: React.FC<Props> = ({ onAuthSuccess, restoringSession =
 
           {/* 🔐 CAPTCHA */}
           <ReCAPTCHA
+            ref={recaptchaRef}
             sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
             onChange={(token) => setCaptchaToken(token)}
             onExpired={() => setCaptchaToken(null)}

@@ -54,6 +54,7 @@ async function request<T>(
     const message =
       data?.message ||
       data?.error?.message ||
+      (Array.isArray(data?.errors) && data.errors[0]?.msg) ||
       `Erreur ${res.status}`;
     throw new Error(message);
   }
