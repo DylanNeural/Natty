@@ -20,9 +20,18 @@ export interface AuthResponse {
   token: string;
 }
 
-const API_URL =
-  (import.meta.env.VITE_API_URL as string | undefined) ||
-  "http://localhost:5000";
+function normalizeApiBaseUrl(rawUrl?: string) {
+  const fallback = "http://localhost:5000";
+  const value = (rawUrl || fallback).trim();
+  return value.replace(/\/+$/, "");
+}
+
+function buildApiUrl(path: string) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${API_URL}${normalizedPath}`;
+}
+
+const API_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_URL as string | undefined);
 
 let csrfTokenCache: string | null = null;
 
@@ -31,7 +40,7 @@ async function getCsrfToken(forceRefresh = false): Promise<string> {
     return csrfTokenCache;
   }
 
-  const res = await fetch(`${API_URL}/api/csrf-token`, {
+  const res = await fetch(buildApiUrl("/api/csrf-token"), {
     method: "GET",
     credentials: "include",
   });
@@ -72,7 +81,7 @@ async function request<T>(
   }
 
   const runFetch = async () =>
-    fetch(`${API_URL}${path}`, {
+    fetch(buildApiUrl(path), {
       ...options,
       headers,
       credentials: "include",
