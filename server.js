@@ -29,11 +29,13 @@ connectDB()
 // =====================
 // CSRF
 // =====================
+const isProduction = process.env.NODE_ENV === "production";
+
 const csrfProtection = csrf({
     cookie: {
         httpOnly: true,
-        sameSite: "strict",
-        secure: process.env.NODE_ENV === "production",
+        sameSite: isProduction ? "none" : "lax",
+        secure: isProduction,
     },
 });
 
