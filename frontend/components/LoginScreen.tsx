@@ -8,6 +8,9 @@ interface Props {
 }
 
 export const LoginScreen: React.FC<Props> = ({ onAuthSuccess, restoringSession = false }) => {
+  const recaptchaEnabled = (import.meta.env.VITE_RECAPTCHA_ENABLED as string | undefined) === 'true';
+  const recaptchaSiteKey = (import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined) || '';
+
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -48,24 +51,28 @@ export const LoginScreen: React.FC<Props> = ({ onAuthSuccess, restoringSession =
 
     if (!validateForm()) return;
 
-    // 🔐 Blocage si captcha non validé
-    if (!captchaToken) {
+    // 🔐 Blocage si captcha activé et non validé
+    if (recaptchaEnabled && !captchaToken) {
       setError("Veuillez valider le captcha");
       return;
     }
+
+    const effectiveCaptchaToken = recaptchaEnabled ? (captchaToken || "") : "bypass-token";
 
     try {
       setIsLoading(true);
 
       const response =
         mode === "login"
-          ? await login(email, password, captchaToken)
-          : await register(name.trim(), email, password, captchaToken);
+          ? await login(email, password, effectiveCaptchaToken)
+          : await register(name.trim(), email, password, effectiveCaptchaToken);
 
       onAuthSuccess(response.user, response.token, mode);
     } catch {
       setError("Identifiants invalides ou compte inexistant");
-      setCaptchaToken(null);
+      if (recaptchaEnabled) {
+        setCaptchaToken(null);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -170,11 +177,23 @@ export const LoginScreen: React.FC<Props> = ({ onAuthSuccess, restoringSession =
           )}
 
           {/* 🔐 CAPTCHA */}
-          <ReCAPTCHA
-            sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-            onChange={(token) => setCaptchaToken(token)}
-            onExpired={() => setCaptchaToken(null)}
-          />
+          {recaptchaEnabled ? (
+            recaptchaSiteKey ? (
+              <ReCAPTCHA
+                sitekey={recaptchaSiteKey}
+                onChange={(token) => setCaptchaToken(token)}
+                onExpired={() => setCaptchaToken(null)}
+              />
+            ) : (
+              <div className="text-sm text-red-500 font-semibold bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-3">
+                Configuration captcha manquante (VITE_RECAPTCHA_SITE_KEY).
+              </div>
+            )
+          ) : (
+            <div className="text-xs text-yellow-600 dark:text-yellow-400 font-semibold bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-3">
+              Captcha désactivé pour cette version.
+            </div>
+          )}
 
           <button
             onClick={handleSubmit}
