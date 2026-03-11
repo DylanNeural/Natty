@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import ReCAPTCHA from "react-google-recaptcha";
 
 interface Props {
   onBack: () => void;
@@ -18,6 +19,9 @@ const statusClasses: Record<TestStatus, string> = {
   error: "text-red-600 dark:text-red-400",
 };
 
+const DEFAULT_TEST_EMAIL = "dylan-psupp@outlook.fr";
+const DEFAULT_TEST_PASSWORD = "rootroot";
+
 function normalizeApiBaseUrl(rawUrl?: string) {
   const fallback = "http://localhost:5000";
   const value = (rawUrl || fallback).trim();
@@ -30,11 +34,16 @@ function buildApiUrl(path: string) {
 }
 
 const API_URL = normalizeApiBaseUrl((import.meta as any).env?.VITE_API_URL as string | undefined);
+const RECAPTCHA_SITE_KEY = ((import.meta as any).env?.VITE_RECAPTCHA_SITE_KEY as string | undefined) || "";
 
 export const TestScreen: React.FC<Props> = ({ onBack }) => {
   const [running, setRunning] = useState(false);
+  const [runningRealLogin, setRunningRealLogin] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [results, setResults] = useState<TestItem[]>([]);
+  const [testEmail, setTestEmail] = useState(DEFAULT_TEST_EMAIL);
+  const [testPassword, setTestPassword] = useState(DEFAULT_TEST_PASSWORD);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const logsText = useMemo(() => logs.join("\n"), [logs]);
 
@@ -53,6 +62,19 @@ export const TestScreen: React.FC<Props> = ({ onBack }) => {
       return JSON.parse(raw);
     } catch {
       return raw;
+    }
+  };
+
+  const redactSensitiveBody = (rawBody: string) => {
+    try {
+      const parsed = JSON.parse(rawBody) as Record<string, unknown>;
+      const redacted = { ...parsed };
+      if ("password" in redacted) redacted.password = "***";
+      if ("captchaToken" in redacted) redacted.captchaToken = "***";
+      if ("token" in redacted) redacted.token = "***";
+      return JSON.stringify(redacted);
+    } catch {
+      return rawBody;
     }
   };
 
@@ -81,7 +103,7 @@ export const TestScreen: React.FC<Props> = ({ onBack }) => {
       appendLog(`REQ headers=${JSON.stringify(init.headers)}`);
     }
     if (typeof init.body === "string") {
-      appendLog(`REQ body=${init.body.slice(0, 500)}`);
+      appendLog(`REQ body=${redactSensitiveBody(init.body).slice(0, 500)}`);
     }
 
     try {
@@ -243,6 +265,82 @@ export const TestScreen: React.FC<Props> = ({ onBack }) => {
     setRunning(false);
   };
 
+  const runRealLoginTest = async () => {
+    if (!testEmail.trim() || !testPassword) {
+      pushResult("Login réel (Dylan)", "error", "Email/mot de passe manquant");
+      appendLog("Login réel annulé: email ou mot de passe manquant");
+      return;
+    }
+
+    if (!captchaToken) {
+      pushResult("Login réel (Dylan)", "error", "Captcha requis avant test login réel");
+      appendLog("Login réel annulé: captchaToken manquant");
+      return;
+    }
+
+    setRunningRealLogin(true);
+
+    const csrfResponse = await runRequest(
+      "CSRF token (login réel)",
+      "/api/csrf-token",
+      { method: "GET", credentials: "include" },
+      (res, body) => {
+        const token = typeof body === "object" && body ? (body as { csrfToken?: string }).csrfToken : undefined;
+        if (!res.ok || !token) {
+          return { status: "error", summary: "Impossible de récupérer CSRF pour login réel" };
+        }
+        return { status: "ok", summary: "CSRF OK pour login réel" };
+      }
+    );
+
+    const csrfToken =
+      csrfResponse &&
+      csrfResponse.body &&
+      typeof csrfResponse.body === "object" &&
+      (csrfResponse.body as { csrfToken?: string }).csrfToken
+        ? (csrfResponse.body as { csrfToken?: string }).csrfToken!
+        : "";
+
+    await runRequest(
+      "Login réel (Dylan)",
+      "/api/auth/login",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
+        },
+        body: JSON.stringify({
+          email: testEmail.trim(),
+          password: testPassword,
+          captchaToken,
+        }),
+      },
+      (res, body) => {
+        const text = typeof body === "string" ? body : JSON.stringify(body || {});
+        if (res.ok && typeof body === "object" && body && (body as { token?: string }).token) {
+          return { status: "ok", summary: "Connexion réelle OK (token reçu)" };
+        }
+        if (res.status === 403 && text.toLowerCase().includes("captcha")) {
+          return { status: "error", summary: "Captcha invalide/expiré (regénère le captcha)" };
+        }
+        if (res.status === 403 && text.toLowerCase().includes("csrf")) {
+          return { status: "error", summary: "CSRF rejeté sur login réel" };
+        }
+        if (res.status === 401) {
+          return { status: "error", summary: "Identifiants invalides" };
+        }
+        if (res.status >= 500) {
+          return { status: "error", summary: `Erreur serveur (${res.status}) sur login réel` };
+        }
+        return { status: "warn", summary: `Réponse inattendue (${res.status})` };
+      }
+    );
+
+    setRunningRealLogin(false);
+  };
+
   const copyLogs = async () => {
     if (!logsText) return;
     try {
@@ -292,6 +390,50 @@ export const TestScreen: React.FC<Props> = ({ onBack }) => {
             className="rounded-xl px-4 py-2 bg-gray-500 text-white text-sm font-semibold"
           >
             Vider
+          </button>
+        </div>
+      </div>
+
+      <div className="rounded-2xl p-4 bg-white dark:bg-card-dark ring-1 ring-gray-200 dark:ring-gray-800">
+        <h2 className="text-sm font-bold text-text-light dark:text-text-dark">Test connexion réelle</h2>
+        <p className="mt-1 text-xs text-text-light/70 dark:text-text-dark/70">
+          Vérifie la vraie connexion avec tes identifiants (captcha requis).
+        </p>
+
+        <div className="mt-3 grid gap-2">
+          <input
+            value={testEmail}
+            onChange={(e) => setTestEmail(e.target.value)}
+            className="h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-text-light dark:text-text-dark"
+            placeholder="Email"
+            type="email"
+            disabled={running || runningRealLogin}
+          />
+          <input
+            value={testPassword}
+            onChange={(e) => setTestPassword(e.target.value)}
+            className="h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-text-light dark:text-text-dark"
+            placeholder="Mot de passe"
+            type="password"
+            disabled={running || runningRealLogin}
+          />
+
+          {RECAPTCHA_SITE_KEY ? (
+            <ReCAPTCHA
+              sitekey={RECAPTCHA_SITE_KEY}
+              onChange={(token) => setCaptchaToken(token)}
+              onExpired={() => setCaptchaToken(null)}
+            />
+          ) : (
+            <p className="text-xs text-red-500">VITE_RECAPTCHA_SITE_KEY manquant: test login réel impossible.</p>
+          )}
+
+          <button
+            onClick={runRealLoginTest}
+            disabled={running || runningRealLogin || !RECAPTCHA_SITE_KEY}
+            className="rounded-xl px-4 py-2 bg-primary text-white text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {runningRealLogin ? "Test login en cours..." : "Tester connexion réelle"}
           </button>
         </div>
       </div>
