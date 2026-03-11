@@ -20,16 +20,47 @@ connectDB();
 // === MIDDLEWARES (ordre est CRUCIAL) ===
 app.use(helmet());
 
-// CORS avec options correctes
-app.use(
-  cors({
-    origin: ["http://localhost:5001", "http://localhost:3000", "http://localhost:3001"],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    optionsSuccessStatus: 200,
-  })
-);
+// CORS (local + Vercel)
+const defaultAllowedOrigins = [
+  "http://localhost:5001",
+  "http://localhost:3000",
+  "http://localhost:3001",
+];
+
+const envAllowedOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...envAllowedOrigins])];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    try {
+      const hostname = new URL(origin).hostname;
+      if (hostname.endsWith(".vercel.app")) {
+        return callback(null, true);
+      }
+    } catch (_) {
+      return callback(new Error("Origin invalide"));
+    }
+
+    return callback(new Error(`Origin non autorisée par CORS: ${origin}`));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 // Parsers JSON
 app.use(express.json({ limit: "100mb" }));
