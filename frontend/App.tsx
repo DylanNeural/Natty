@@ -12,7 +12,10 @@ import { ImageEditorScreen } from "./components/ImageEditorScreen";
 import { SocialClubScreen } from "./components/SocialClubScreen";
 import { MenuScreen } from "./components/MenuScreen";
 import { PaywallScreen } from "./components/PaywallScreen";
+<<<<<<< HEAD
 import { TestScreen } from "./components/TestScreen";
+=======
+>>>>>>> 70f9d6c ( ajout)
 import { BottomNav } from "./components/BottomNav";
 import { User } from "./services/api";
 import { useAuth } from "./services/AuthContext";
@@ -33,7 +36,10 @@ export enum Screen {
   IMAGE_EDITOR = "IMAGE_EDITOR",
   SOCIAL_CLUB = "SOCIAL_CLUB",
   MENU = "MENU",
+<<<<<<< HEAD
   TEST = "TEST",
+=======
+>>>>>>> 70f9d6c ( ajout)
 }
 
 const App: React.FC = () => {
@@ -127,10 +133,14 @@ const App: React.FC = () => {
         {currentScreen === Screen.SPLASH && <SplashScreen />}
 
         {currentScreen === Screen.LANDING && (
+<<<<<<< HEAD
           <LandingScreen
             onNavigate={() => setCurrentScreen(Screen.LOGIN)}
             onTestNavigate={() => setCurrentScreen(Screen.TEST)}
           />
+=======
+          <LandingScreen onNavigate={() => setCurrentScreen(Screen.LOGIN)} />
+>>>>>>> 70f9d6c ( ajout)
         )}
 
         {currentScreen === Screen.LOGIN && (
@@ -181,10 +191,13 @@ const App: React.FC = () => {
         {currentScreen === Screen.MENU && (
           <MenuScreen onBack={() => setCurrentScreen(Screen.MAP)} />
         )}
+<<<<<<< HEAD
 
         {currentScreen === Screen.TEST && (
           <TestScreen onBack={() => setCurrentScreen(Screen.LANDING)} />
         )}
+=======
+>>>>>>> 70f9d6c ( ajout)
       </div>
 
       {/* Navigation basse */}
