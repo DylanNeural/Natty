@@ -2,6 +2,15 @@
 const mongoose = require("mongoose");
 
 const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_SERVER_SELECTION_TIMEOUT_MS = Number(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS || 30000);
+const MONGODB_CONNECT_TIMEOUT_MS = Number(process.env.MONGODB_CONNECT_TIMEOUT_MS || 30000);
+const MONGODB_SOCKET_TIMEOUT_MS = Number(process.env.MONGODB_SOCKET_TIMEOUT_MS || 45000);
+const MONGODB_CONNECT_RETRIES = Number(process.env.MONGODB_CONNECT_RETRIES || 2);
+const MONGODB_CONNECT_RETRY_DELAY_MS = Number(process.env.MONGODB_CONNECT_RETRY_DELAY_MS || 2000);
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 // Cache de connexion pour environnement serverless (Vercel)
 let cached = global._mongooseConnection;
@@ -20,14 +29,35 @@ async function connectDB() {
   }
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
-      connectTimeoutMS: 10000,
-      family: 4,
-      heartbeatFrequencyMS: 10000,
-      maxPoolSize: 10,
-    });
+    cached.promise = (async () => {
+      let lastError;
+
+      for (let attempt = 1; attempt <= MONGODB_CONNECT_RETRIES + 1; attempt += 1) {
+        try {
+          return await mongoose.connect(MONGODB_URI, {
+            serverSelectionTimeoutMS: MONGODB_SERVER_SELECTION_TIMEOUT_MS,
+            socketTimeoutMS: MONGODB_SOCKET_TIMEOUT_MS,
+            connectTimeoutMS: MONGODB_CONNECT_TIMEOUT_MS,
+            heartbeatFrequencyMS: 10000,
+            maxPoolSize: 10,
+          });
+        } catch (error) {
+          lastError = error;
+          const hasRetryLeft = attempt <= MONGODB_CONNECT_RETRIES;
+
+          if (!hasRetryLeft) {
+            break;
+          }
+
+          console.warn(
+            `⚠️ Tentative MongoDB ${attempt} échouée: ${error.message}. Nouvelle tentative dans ${MONGODB_CONNECT_RETRY_DELAY_MS}ms...`
+          );
+          await wait(MONGODB_CONNECT_RETRY_DELAY_MS);
+        }
+      }
+
+      throw lastError;
+    })();
   }
 
   try {
@@ -43,6 +73,11 @@ async function connectDB() {
     if (error?.reason?.type === "ReplicaSetNoPrimary") {
       console.error(
         "   Vérifie Atlas: cluster actif (non pausé), IP Access List en 0.0.0.0/0, et URI exacte depuis Atlas > Connect > Drivers"
+      );
+    }
+    if (String(error?.message || "").includes("secureConnect")) {
+      console.error(
+        "   Timeout TLS: vérifie MONGODB_URI dans Vercel, user/mot de passe Atlas, et que le cluster Atlas est bien actif"
       );
     }
     throw error; // Ne pas process.exit() en serverless
