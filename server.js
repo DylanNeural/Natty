@@ -16,6 +16,9 @@ const { globalLimiter, loginLimiter, chatbotLimiter } = require("./backend/secur
 // =====================
 const app = express();
 
+// Vercel est derrière un proxy (nécessaire pour req.ip / rate-limit)
+app.set("trust proxy", 1);
+
 // =====================
 // CONNEXION DB
 // =====================
