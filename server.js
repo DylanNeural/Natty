@@ -74,7 +74,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 logger.info("CORS configuré", { origins: allowedOrigins }, "middleware");
 
 // 3. Rate limit global
