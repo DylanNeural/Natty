@@ -1,7 +1,9 @@
 const axios = require("axios");
 
 const verifyRecaptcha = async (token) => {
-  if (process.env.RECAPTCHA_BYPASS === "true") {
+  const recaptchaEnabled = process.env.RECAPTCHA_ENABLED === "true";
+
+  if (!recaptchaEnabled || process.env.RECAPTCHA_BYPASS === "true") {
     return true;
   }
 
