@@ -50,6 +50,7 @@ web-build/
 *.pid
 *.seed
 *.pid.lock
+frontend_v3/FrontEndv3.zip
 
 # Coverage
 coverage/
