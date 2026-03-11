@@ -24,6 +24,8 @@ async function connectDB() {
       serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
       connectTimeoutMS: 10000,
+      family: 4,
+      heartbeatFrequencyMS: 10000,
       maxPoolSize: 10,
     });
   }
@@ -37,6 +39,11 @@ async function connectDB() {
     console.error("❌ Erreur de connexion à MongoDB :", error.message);
     if (error.reason) {
       console.error("   Détails réseau:", error.reason.type || error.reason);
+    }
+    if (error?.reason?.type === "ReplicaSetNoPrimary") {
+      console.error(
+        "   Vérifie Atlas: cluster actif (non pausé), IP Access List en 0.0.0.0/0, et URI exacte depuis Atlas > Connect > Drivers"
+      );
     }
     throw error; // Ne pas process.exit() en serverless
   }
