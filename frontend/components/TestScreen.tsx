@@ -37,8 +37,10 @@ const API_URL = normalizeApiBaseUrl((import.meta as any).env?.VITE_API_URL as st
 export const TestScreen: React.FC<Props> = ({ onBack }) => {
   const [running, setRunning] = useState(false);
   const [runningRealLogin, setRunningRealLogin] = useState(false);
+  const [runningRealRegister, setRunningRealRegister] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [results, setResults] = useState<TestItem[]>([]);
+  const [testName, setTestName] = useState("Dylan Test");
   const [testEmail, setTestEmail] = useState(DEFAULT_TEST_EMAIL);
   const [testPassword, setTestPassword] = useState(DEFAULT_TEST_PASSWORD);
 
@@ -332,6 +334,77 @@ export const TestScreen: React.FC<Props> = ({ onBack }) => {
     setRunningRealLogin(false);
   };
 
+  const runRealRegisterTest = async () => {
+    if (!testName.trim() || !testEmail.trim() || !testPassword) {
+      pushResult("Inscription réelle (Dylan)", "error", "Nom/email/mot de passe manquant");
+      appendLog("Inscription réelle annulée: nom, email ou mot de passe manquant");
+      return;
+    }
+
+    setRunningRealRegister(true);
+
+    const csrfResponse = await runRequest(
+      "CSRF token (inscription réelle)",
+      "/api/csrf-token",
+      { method: "GET", credentials: "include" },
+      (res, body) => {
+        const token = typeof body === "object" && body ? (body as { csrfToken?: string }).csrfToken : undefined;
+        if (!res.ok || !token) {
+          return { status: "error", summary: "Impossible de récupérer CSRF pour inscription réelle" };
+        }
+        return { status: "ok", summary: "CSRF OK pour inscription réelle" };
+      }
+    );
+
+    const csrfToken =
+      csrfResponse &&
+      csrfResponse.body &&
+      typeof csrfResponse.body === "object" &&
+      (csrfResponse.body as { csrfToken?: string }).csrfToken
+        ? (csrfResponse.body as { csrfToken?: string }).csrfToken!
+        : "";
+
+    await runRequest(
+      "Inscription réelle (Dylan)",
+      "/api/auth/register",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
+        },
+        body: JSON.stringify({
+          name: testName.trim(),
+          email: testEmail.trim(),
+          password: testPassword,
+          captchaToken: "bypass-token",
+        }),
+      },
+      (res, body) => {
+        const text = typeof body === "string" ? body : JSON.stringify(body || {});
+        if (res.ok && typeof body === "object" && body && (body as { token?: string }).token) {
+          return { status: "ok", summary: "Inscription réelle OK (token reçu)" };
+        }
+        if (res.status === 409) {
+          return { status: "warn", summary: "Utilisateur déjà existant" };
+        }
+        if (res.status === 403 && text.toLowerCase().includes("captcha")) {
+          return { status: "error", summary: "Captcha refusé: active RECAPTCHA_BYPASS=true côté backend" };
+        }
+        if (res.status === 403 && text.toLowerCase().includes("csrf")) {
+          return { status: "error", summary: "CSRF rejeté sur inscription réelle" };
+        }
+        if (res.status >= 500) {
+          return { status: "error", summary: `Erreur serveur (${res.status}) sur inscription réelle` };
+        }
+        return { status: "warn", summary: `Réponse inattendue (${res.status})` };
+      }
+    );
+
+    setRunningRealRegister(false);
+  };
+
   const copyLogs = async () => {
     if (!logsText) return;
     try {
@@ -386,9 +459,9 @@ export const TestScreen: React.FC<Props> = ({ onBack }) => {
       </div>
 
       <div className="rounded-2xl p-4 bg-white dark:bg-card-dark ring-1 ring-gray-200 dark:ring-gray-800">
-        <h2 className="text-sm font-bold text-text-light dark:text-text-dark">Test connexion réelle</h2>
+        <h2 className="text-sm font-bold text-text-light dark:text-text-dark">Test connexion / inscription réelle</h2>
         <p className="mt-1 text-xs text-text-light/70 dark:text-text-dark/70">
-          Vérifie la vraie connexion avec tes identifiants (sans captcha côté UI).
+          Vérifie la vraie connexion et inscription avec tes identifiants (sans captcha côté UI).
         </p>
 
         <p className="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
@@ -397,12 +470,20 @@ export const TestScreen: React.FC<Props> = ({ onBack }) => {
 
         <div className="mt-3 grid gap-2">
           <input
+            value={testName}
+            onChange={(e) => setTestName(e.target.value)}
+            className="h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-text-light dark:text-text-dark"
+            placeholder="Nom"
+            type="text"
+            disabled={running || runningRealLogin || runningRealRegister}
+          />
+          <input
             value={testEmail}
             onChange={(e) => setTestEmail(e.target.value)}
             className="h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-text-light dark:text-text-dark"
             placeholder="Email"
             type="email"
-            disabled={running || runningRealLogin}
+            disabled={running || runningRealLogin || runningRealRegister}
           />
           <input
             value={testPassword}
@@ -410,16 +491,26 @@ export const TestScreen: React.FC<Props> = ({ onBack }) => {
             className="h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-text-light dark:text-text-dark"
             placeholder="Mot de passe"
             type="password"
-            disabled={running || runningRealLogin}
+            disabled={running || runningRealLogin || runningRealRegister}
           />
 
-          <button
-            onClick={runRealLoginTest}
-            disabled={running || runningRealLogin}
-            className="rounded-xl px-4 py-2 bg-primary text-white text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {runningRealLogin ? "Test login en cours..." : "Tester connexion réelle"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={runRealRegisterTest}
+              disabled={running || runningRealLogin || runningRealRegister}
+              className="rounded-xl px-4 py-2 bg-secondary text-white text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {runningRealRegister ? "Test inscription en cours..." : "Tester inscription réelle"}
+            </button>
+
+            <button
+              onClick={runRealLoginTest}
+              disabled={running || runningRealLogin || runningRealRegister}
+              className="rounded-xl px-4 py-2 bg-primary text-white text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {runningRealLogin ? "Test login en cours..." : "Tester connexion réelle"}
+            </button>
+          </div>
         </div>
       </div>
 
