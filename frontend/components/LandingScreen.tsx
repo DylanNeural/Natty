@@ -2,9 +2,10 @@ import React from 'react';
 
 interface Props {
   onNavigate: () => void;
+  onTestNavigate?: () => void;
 }
 
-export const LandingScreen: React.FC<Props> = ({ onNavigate }) => {
+export const LandingScreen: React.FC<Props> = ({ onNavigate, onTestNavigate }) => {
   return (
     <div className="relative flex h-full w-full flex-col items-center justify-between p-4 bg-background-dark overflow-hidden">
       {/* Background Image - Sexy & Energetic */}
@@ -43,6 +44,15 @@ export const LandingScreen: React.FC<Props> = ({ onNavigate }) => {
             <span className="material-symbols-outlined">arrow_forward</span>
           </span>
         </button>
+
+        {onTestNavigate && (
+          <button
+            onClick={onTestNavigate}
+            className="mt-4 w-full rounded-full h-12 border border-white/20 text-white/90 text-sm font-semibold tracking-wide bg-white/5 hover:bg-white/10 transition-colors duration-200"
+          >
+            Page de test (temporaire)
+          </button>
+        )}
       </footer>
     </div>
   );
