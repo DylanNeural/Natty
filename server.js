@@ -76,6 +76,11 @@
                 scriptSrc: ["'self'"],
                 styleSrc: ["'self'"],
                 imgSrc: ["'self'", "data:"],
+                fontSrc: ["'self'"],
+                objectSrc: ["'none'"],
+                frameAncestors: ["'none'"],
+                formAction: ["'self'"],
+                upgradeInsecureRequests: [],
             }
         },
         frameguard: { action: "deny" },
@@ -83,7 +88,6 @@
         noSniff: true,
         referrerPolicy: { policy: "no-referrer" },
     }));
-    logger.info("Helmet middleware chargé", {}, "middleware");
 
     // CORS
     app.use(
