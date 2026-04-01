@@ -2,9 +2,11 @@
 
 
     const path = require("path");
+    const crypto = require("crypto");
     const helmet = require("helmet");
     const express = require("express");
     const cors = require("cors");
+    const cookieParser = require("cookie-parser");
     const fs = require("fs");
 
     const connectDB = require("./backend/config/db");
@@ -27,13 +29,6 @@
     // Winston logger
     const winston = require("winston");
     const logger = require("./backend/logs/logger");
-
-
-    // Test simple
-    logger.info("✅ Serveur backend démarré");
-    logger.warn("Tentative suspecte", { ip: "192.168.1.10" });
-    logger.error("Erreur DB", { error: "Timeout Mongo" });
-
 
     // Log de test à l'init
     logger.info("✅ Logger initialisé et prêt à écrire dans app.log");
@@ -86,25 +81,78 @@
     }));
     logger.info("Helmet middleware chargé", {}, "middleware");
 
-    const cookieParser = require("cookie-parser");
-    app.use(cookieParser());
+    const configuredOrigins = (process.env.CORS_ORIGINS || "")
+        .split(",")
+        .map((origin) => origin.trim())
+        .filter(Boolean);
+
+    const defaultOrigins = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:5001",
+        "http://127.0.0.1:5001",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://nattyfront.vercel.app",
+    ];
+
+    const allowedOrigins = new Set([...defaultOrigins, ...configuredOrigins]);
+    const isAllowedOrigin = (origin) => {
+        if (!origin) {
+            return true;
+        }
+
+        if (allowedOrigins.has(origin)) {
+            return true;
+        }
+
+        // Allow Vercel deployment previews for the frontend.
+        return /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
+    };
 
     // CORS
     app.use(
         cors({
-            origin: process.env.CORS_ORIGINS || "http://localhost:3000",
+            origin: (origin, callback) => {
+                if (isAllowedOrigin(origin)) {
+                    return callback(null, true);
+                }
+
+                logger.warn("Origine CORS refusée", { origin }, "security");
+                return callback(null, false);
+            },
             credentials: true,
-            methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            allowedHeaders: ["Content-Type", "Authorization"],
+            methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+            allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token"],
             optionsSuccessStatus: 200,
         })
     );
-    logger.info("CORS middleware configuré", { origin: "http://localhost:3000" }, "middleware");
+    logger.info(
+        "CORS middleware configuré",
+        { origins: Array.from(allowedOrigins) },
+        "middleware"
+    );
+
+    app.use(cookieParser());
 
     // JSON parsers
     app.use(express.json({ limit: "10kb" }));
     app.use(express.urlencoded({ extended: true, limit: "10kb" }));
     logger.info("Parsers JSON et URL-encoded activés", { limit: "10kb" }, "middleware");
+
+    app.get("/api/csrf-token", (req, res) => {
+        const csrfToken = crypto.randomBytes(24).toString("hex");
+        const isProd = process.env.NODE_ENV === "production";
+
+        res.cookie("csrfToken", csrfToken, {
+            httpOnly: false,
+            secure: isProd,
+            sameSite: isProd ? "none" : "lax",
+            maxAge: 60 * 60 * 1000,
+        });
+
+        res.json({ csrfToken });
+    });
 
     // =====================
     // ROUTES
@@ -146,7 +194,7 @@
     // =====================
     // START SERVER
     // =====================
-    const PORT = process.env.PORT || 3000;
+    const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
         logger.info(`✅ Serveur backend démarré sur http://localhost:${PORT}`, {}, "server");
     });
