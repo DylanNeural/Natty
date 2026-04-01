@@ -44,6 +44,20 @@ const authRoutes = require("./backend/routes/auth.routes");
 const mealsRoutes = require("./backend/routes/meals.routes");
 const scanRoutes = require("./backend/routes/scan.routes");
 
+// --- V1 : nouvelles routes ---
+const fridgesRoutes = require("./backend/routes/fridges.routes");
+const productsRoutes = require("./backend/routes/products.routes");
+const ordersRoutes = require("./backend/routes/orders.routes");
+const hydrationRoutes = require("./backend/routes/hydration.routes");
+const fastingRoutes = require("./backend/routes/fasting.routes");
+const challengesRoutes = require("./backend/routes/challenges.routes");
+const socialRoutes = require("./backend/routes/social.routes");
+const notificationsRoutes = require("./backend/routes/notifications.routes");
+const subscriptionsRoutes = require("./backend/routes/subscriptions.routes");
+const articlesRoutes = require("./backend/routes/articles.routes");
+const userFridgeRoutes = require("./backend/routes/user-fridge.routes");
+const wearablesRoutes = require("./backend/routes/wearables.routes");
+
 const app = express();
 
 // =====================
@@ -106,6 +120,21 @@ logger.info("Route /api/meals chargée", {}, "routes");
 
 app.use("/api/chatbot", require("./backend/routes/chatbot.routes"));
 logger.info("Route /api/chatbot chargée", {}, "routes");
+
+// --- V1 : nouvelles routes ---
+app.use("/api/fridges", fridgesRoutes);
+app.use("/api/products", productsRoutes);
+app.use("/api/orders", ordersRoutes);
+app.use("/api/hydration", hydrationRoutes);
+app.use("/api/fasting", fastingRoutes);
+app.use("/api/challenges", challengesRoutes);
+app.use("/api/social", socialRoutes);
+app.use("/api/notifications", notificationsRoutes);
+app.use("/api/subscriptions", subscriptionsRoutes);
+app.use("/api/articles", articlesRoutes);
+app.use("/api/user-fridge", userFridgeRoutes);
+app.use("/api/wearables", wearablesRoutes);
+logger.info("Routes V1 chargées", {}, "routes");
 
 // =====================
 // SCAN ROUTES
