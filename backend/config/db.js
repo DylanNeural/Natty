@@ -1,4 +1,14 @@
 // backend/config/db.js
+const dns = require("dns");
+
+try {
+  // Apply DNS resolver override early to improve mongodb+srv resolution reliability.
+  require("./dns-fix");
+  dns.setDefaultResultOrder("ipv4first");
+} catch (error) {
+  console.warn("⚠️ DNS fix non appliqué:", error.message);
+}
+
 const mongoose = require("mongoose");
 
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -7,6 +17,7 @@ const MONGODB_CONNECT_TIMEOUT_MS = Number(process.env.MONGODB_CONNECT_TIMEOUT_MS
 const MONGODB_SOCKET_TIMEOUT_MS = Number(process.env.MONGODB_SOCKET_TIMEOUT_MS || 45000);
 const MONGODB_CONNECT_RETRIES = Number(process.env.MONGODB_CONNECT_RETRIES || 0);
 const MONGODB_CONNECT_RETRY_DELAY_MS = Number(process.env.MONGODB_CONNECT_RETRY_DELAY_MS || 1000);
+const MONGODB_URI_DIRECT = process.env.MONGODB_URI_DIRECT;
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -19,7 +30,9 @@ if (!cached) {
 }
 
 async function connectDB() {
-  if (!MONGODB_URI) {
+  const mongoUri = MONGODB_URI_DIRECT || MONGODB_URI;
+
+  if (!mongoUri) {
     throw new Error("❌ MONGODB_URI manquant dans les variables d'environnement");
   }
 
@@ -34,12 +47,13 @@ async function connectDB() {
 
       for (let attempt = 1; attempt <= MONGODB_CONNECT_RETRIES + 1; attempt += 1) {
         try {
-          return await mongoose.connect(MONGODB_URI, {
+          return await mongoose.connect(mongoUri, {
             serverSelectionTimeoutMS: MONGODB_SERVER_SELECTION_TIMEOUT_MS,
             socketTimeoutMS: MONGODB_SOCKET_TIMEOUT_MS,
             connectTimeoutMS: MONGODB_CONNECT_TIMEOUT_MS,
             heartbeatFrequencyMS: 10000,
             maxPoolSize: 10,
+            family: 4,
           });
         } catch (error) {
           lastError = error;
@@ -78,6 +92,11 @@ async function connectDB() {
     if (String(error?.message || "").includes("secureConnect")) {
       console.error(
         "   Timeout TLS: vérifie MONGODB_URI dans Vercel, user/mot de passe Atlas, et que le cluster Atlas est bien actif"
+      );
+    }
+    if (String(error?.message || "").includes("querySrv")) {
+      console.error(
+        "   DNS SRV refusé. Option de contournement: définir MONGODB_URI_DIRECT avec l'URI standard mongodb:// (sans +srv) depuis Atlas > Connect > Drivers"
       );
     }
     throw error; // Ne pas process.exit() en serverless
