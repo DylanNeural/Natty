@@ -1,0 +1,5 @@
+{
+  "name": "Natty - Nutrition Sportive Intelligente",
+  "description": "Une application de nutrition sportive intelligente qui vous aide à atteindre vos objectifs grâce à l'IA, le suivi des macros et la localisation de frigos sains.",
+  "requestFramePermissions": ["camera", "geolocation"]
+}
