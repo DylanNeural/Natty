@@ -60,3 +60,6 @@ coverage/
 
 # Test
 .env.test
+
+# Maquettes V1
+V1/
