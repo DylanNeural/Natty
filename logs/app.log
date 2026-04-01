@@ -10510,3 +10510,90 @@
 2026-04-01 11:53:35 [INFO] scanRoutes chargé ? | {"loaded":true}
 2026-04-01 11:53:35 [INFO] ✅ Serveur backend démarré sur http://localhost:3000
 2026-04-01 11:53:36 [INFO] ✅ MongoDB connecté
+2026-04-01 12:00:51 [INFO] ✅ Logger initialisé et prêt à écrire dans app.log
+2026-04-01 12:00:51 [INFO] ✅ Serveur backend démarré
+2026-04-01 12:00:51 [WARN] Tentative suspecte | {"ip":"192.168.1.10"}
+2026-04-01 12:00:51 [ERROR] Erreur DB | {"error":"Timeout Mongo"}
+2026-04-01 12:00:51 [INFO] ✅ Logger initialisé et prêt à écrire dans app.log
+2026-04-01 12:00:52 [INFO] ✅ ROOT server.js est bien lancé
+2026-04-01 12:00:52 [INFO] CORS middleware configuré | {"origin":"http://localhost:3000"}
+2026-04-01 12:00:52 [INFO] Parsers JSON et URL-encoded activés | {"limit":"10kb"}
+2026-04-01 12:00:52 [INFO] Route /api/profile chargée
+2026-04-01 12:00:52 [INFO] Route /api/progress chargée
+2026-04-01 12:00:52 [INFO] Route /api/auth chargée
+2026-04-01 12:00:52 [INFO] Route /api/meals chargée
+2026-04-01 12:00:52 [INFO] Route /api/chatbot chargée
+2026-04-01 12:00:52 [INFO] scanRoutes chargé ? | {"loaded":true}
+2026-04-01 12:00:52 [INFO] ✅ Serveur backend démarré sur http://localhost:3000
+2026-04-01 12:00:52 [INFO] ✅ MongoDB connecté
+2026-04-01 12:05:08 [INFO] ✅ Logger initialisé et prêt à écrire dans app.log
+2026-04-01 12:05:08 [INFO] ✅ Logger initialisé et prêt à écrire dans app.log
+2026-04-01 12:05:08 [INFO] ✅ ROOT server.js est bien lancé
+2026-04-01 12:05:08 [INFO] CORS middleware configuré | {"origins":["http://localhost:3000","http://localhost:3001","https://nattyfront.vercel.app"]}
+2026-04-01 12:05:08 [INFO] Parsers JSON et URL-encoded activés | {"limit":"10kb"}
+2026-04-01 12:05:08 [INFO] Route /api/profile chargée
+2026-04-01 12:05:08 [INFO] Route /api/progress chargée
+2026-04-01 12:05:08 [INFO] Route /api/auth chargée
+2026-04-01 12:05:08 [INFO] Route /api/meals chargée
+2026-04-01 12:05:08 [INFO] Route /api/chatbot chargée
+2026-04-01 12:05:08 [INFO] scanRoutes chargé ? | {"loaded":true}
+2026-04-01 12:05:08 [INFO] ✅ Serveur backend démarré sur http://localhost:3000
+2026-04-01 12:05:08 [INFO] ✅ MongoDB connecté
+2026-04-01 12:05:35 [INFO] ✅ Logger initialisé et prêt à écrire dans app.log
+2026-04-01 12:05:35 [INFO] ✅ Logger initialisé et prêt à écrire dans app.log
+2026-04-01 12:05:35 [INFO] ✅ ROOT server.js est bien lancé
+2026-04-01 12:05:35 [INFO] CORS middleware configuré | {"origins":["http://localhost:3000","http://localhost:3001","https://nattyfront.vercel.app"]}
+2026-04-01 12:05:35 [INFO] Parsers JSON et URL-encoded activés | {"limit":"10kb"}
+2026-04-01 12:05:35 [INFO] Route /api/profile chargée
+2026-04-01 12:05:35 [INFO] Route /api/progress chargée
+2026-04-01 12:05:35 [INFO] Route /api/auth chargée
+2026-04-01 12:05:35 [INFO] Route /api/meals chargée
+2026-04-01 12:05:35 [INFO] Route /api/chatbot chargée
+2026-04-01 12:05:35 [INFO] scanRoutes chargé ? | {"loaded":true}
+2026-04-01 12:05:35 [INFO] ✅ Serveur backend démarré sur http://localhost:3000
+2026-04-01 12:05:36 [INFO] ✅ MongoDB connecté
+2026-04-01 12:05:38 [INFO] ::1 - - [01/Apr/2026:10:05:38 +0000] "GET /api/csrf-token HTTP/1.1" 200 64 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; fr-FR) WindowsPowerShell/5.1.26100.7920"
+2026-04-01 12:05:42 [INFO] ::1 - - [01/Apr/2026:10:05:42 +0000] "GET /api/csrf-token HTTP/1.1" 200 64 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; fr-FR) WindowsPowerShell/5.1.26100.7920"
+2026-04-01 12:06:35 [INFO] ✅ Logger initialisé et prêt à écrire dans app.log
+2026-04-01 12:06:35 [INFO] ✅ Logger initialisé et prêt à écrire dans app.log
+2026-04-01 12:06:35 [INFO] ✅ ROOT server.js est bien lancé
+2026-04-01 12:06:35 [INFO] CORS middleware configuré | {"origins":["http://localhost:3000","http://localhost:3001","https://nattyfront.vercel.app"]}
+2026-04-01 12:06:35 [INFO] Parsers JSON et URL-encoded activés | {"limit":"10kb"}
+2026-04-01 12:06:35 [INFO] Route /api/profile chargée
+2026-04-01 12:06:35 [INFO] Route /api/progress chargée
+2026-04-01 12:06:35 [INFO] Route /api/auth chargée
+2026-04-01 12:06:35 [INFO] Route /api/meals chargée
+2026-04-01 12:06:35 [INFO] Route /api/chatbot chargée
+2026-04-01 12:06:35 [INFO] scanRoutes chargé ? | {"loaded":true}
+2026-04-01 12:06:35 [INFO] ✅ Serveur backend démarré sur http://localhost:3000
+2026-04-01 12:06:35 [INFO] ✅ MongoDB connecté
+2026-04-01 12:09:27 [INFO] ✅ Logger initialisé et prêt à écrire dans app.log
+2026-04-01 12:09:27 [INFO] ✅ Logger initialisé et prêt à écrire dans app.log
+2026-04-01 12:09:27 [INFO] ✅ ROOT server.js est bien lancé
+2026-04-01 12:09:27 [INFO] CORS middleware configuré | {"origins":["http://localhost:3000","http://localhost:3001","http://localhost:5001","http://127.0.0.1:5001","http://localhost:5173","http://127.0.0.1:5173","https://nattyfront.vercel.app"]}
+2026-04-01 12:09:27 [INFO] Parsers JSON et URL-encoded activés | {"limit":"10kb"}
+2026-04-01 12:09:27 [INFO] Route /api/profile chargée
+2026-04-01 12:09:27 [INFO] Route /api/progress chargée
+2026-04-01 12:09:27 [INFO] Route /api/auth chargée
+2026-04-01 12:09:27 [INFO] Route /api/meals chargée
+2026-04-01 12:09:27 [INFO] Route /api/chatbot chargée
+2026-04-01 12:09:27 [INFO] scanRoutes chargé ? | {"loaded":true}
+2026-04-01 12:09:27 [INFO] ✅ Serveur backend démarré sur http://localhost:5000
+2026-04-01 12:09:28 [INFO] ✅ MongoDB connecté
+2026-04-01 12:09:54 [INFO] ::1 - - [01/Apr/2026:10:09:54 +0000] "GET /api/csrf-token HTTP/1.1" 200 64 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; fr-FR) WindowsPowerShell/5.1.26100.7920"
+2026-04-01 12:10:33 [INFO] ✅ Logger initialisé et prêt à écrire dans app.log
+2026-04-01 12:10:33 [INFO] ✅ Logger initialisé et prêt à écrire dans app.log
+2026-04-01 12:10:33 [INFO] ✅ ROOT server.js est bien lancé
+2026-04-01 12:10:33 [INFO] CORS middleware configuré | {"origins":["http://localhost:3000","http://localhost:3001","http://localhost:5001","http://127.0.0.1:5001","http://localhost:5173","http://127.0.0.1:5173","https://nattyfront.vercel.app"]}
+2026-04-01 12:10:33 [INFO] Parsers JSON et URL-encoded activés | {"limit":"10kb"}
+2026-04-01 12:10:33 [INFO] Route /api/profile chargée
+2026-04-01 12:10:33 [INFO] Route /api/progress chargée
+2026-04-01 12:10:33 [INFO] Route /api/auth chargée
+2026-04-01 12:10:33 [INFO] Route /api/meals chargée
+2026-04-01 12:10:33 [INFO] Route /api/chatbot chargée
+2026-04-01 12:10:33 [INFO] scanRoutes chargé ? | {"loaded":true}
+2026-04-01 12:10:33 [INFO] ✅ Serveur backend démarré sur http://localhost:5000
+2026-04-01 12:10:33 [INFO] ✅ MongoDB connecté
+2026-04-01 12:11:04 [INFO] ::ffff:127.0.0.1 - - [01/Apr/2026:10:11:04 +0000] "GET /api/csrf-token HTTP/1.1" 200 64 "http://localhost:5001/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0"
+2026-04-01 12:11:04 [INFO] ::ffff:127.0.0.1 - - [01/Apr/2026:10:11:04 +0000] "OPTIONS /api/auth/register HTTP/1.1" 200 0 "http://localhost:5001/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0"
+2026-04-01 12:11:04 [INFO] ::ffff:127.0.0.1 - - [01/Apr/2026:10:11:04 +0000] "POST /api/auth/register HTTP/1.1" 201 316 "http://localhost:5001/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0"
