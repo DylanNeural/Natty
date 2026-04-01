@@ -10392,3 +10392,24 @@
 2026-03-11 11:42:13 [INFO] 192.168.20.128 - - [11/Mar/2026:10:42:13 +0000] "GET /2K5dVTPJ.lock HTTP/1.1" 404 152 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
 2026-03-11 11:42:13 [INFO] 192.168.20.128 - - [11/Mar/2026:10:42:13 +0000] "GET /2K5dVTPJ.lst HTTP/1.1" 404 151 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
 2026-03-11 11:42:13 [INFO] 192.168.20.128 - - [11/Mar/2026:10:42:13 +0000] "GET /2K5dVTPJ.pwd HTTP/1.1" 404 151 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
+2026-04-01 16:08:50 [INFO] ✅ Logger initialisé et prêt à écrire dans app.log
+2026-04-01 16:08:50 [INFO] ✅ Serveur backend démarré
+2026-04-01 16:08:50 [WARN] Tentative suspecte | {"ip":"192.168.1.10"}
+2026-04-01 16:08:50 [ERROR] Erreur DB | {"error":"Timeout Mongo"}
+2026-04-01 16:08:50 [INFO] ✅ Logger initialisé et prêt à écrire dans app.log
+2026-04-01 16:08:50 [INFO] ✅ ROOT server.js est bien lancé
+2026-04-01 16:08:50 [INFO] Helmet middleware chargé
+2026-04-01 16:08:50 [INFO] CORS middleware configuré | {"origins":["http://localhost:3000","http://localhost:3001","http://localhost:5001","http://127.0.0.1:5001","http://localhost:5173","http://127.0.0.1:5173","https://nattyfront.vercel.app"]}
+2026-04-01 16:08:50 [INFO] Parsers JSON et URL-encoded activés | {"limit":"100mb"}
+2026-04-01 16:08:50 [INFO] Route /api/profile chargée
+2026-04-01 16:08:50 [INFO] Route /api/progress chargée
+2026-04-01 16:08:50 [INFO] Route /api/auth chargée
+2026-04-01 16:08:50 [INFO] Route /api/meals chargée
+2026-04-01 16:08:50 [INFO] Route /api/chatbot chargée
+2026-04-01 16:08:50 [INFO] Route /api/articles chargée
+2026-04-01 16:08:50 [INFO] Route /api/challenges chargée
+2026-04-01 16:08:50 [INFO] Route /api/fridges chargée
+2026-04-01 16:08:50 [INFO] Route /api/admin chargée
+2026-04-01 16:08:50 [INFO] scanRoutes chargé ? | {"loaded":true}
+2026-04-01 16:08:50 [INFO] ✅ Serveur backend démarré sur http://localhost:5000
+2026-04-01 16:08:51 [INFO]  MongoDB connecté
