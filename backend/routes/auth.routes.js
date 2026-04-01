@@ -14,6 +14,16 @@ const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-natty";
 
+function isAdminEmail(email) {
+  const fromEnv = (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((v) => v.trim().toLowerCase())
+    .filter(Boolean);
+
+  const adminEmails = new Set(["dylan-psupp@outlook.fr", ...fromEnv]);
+  return adminEmails.has((email || "").toLowerCase());
+}
+
 function generateToken(userId) {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: "7d" });
 }
@@ -71,6 +81,7 @@ router.post(
           id: user._id,
           name: user.name,
           email: user.email,
+          isAdmin: isAdminEmail(user.email),
         },
         token,
       });
@@ -141,6 +152,7 @@ router.post(
         id: user._id,
         name: user.name,
         email: user.email,
+        isAdmin: isAdminEmail(user.email),
       },
       token,
     });
