@@ -6,7 +6,6 @@
     const helmet = require("helmet");
     const express = require("express");
     const cors = require("cors");
-    const cookieParser = require("cookie-parser");
     const fs = require("fs");
 
     const connectDB = require("./backend/config/db");
@@ -51,9 +50,9 @@
     // CONNEXION DB
     // =====================
     connectDB()
-        .then(() => logger.info("✅ MongoDB connecté", {}, "database"))
+        .then(() => logger.info(" MongoDB connecté", {}, "database"))
         .catch((err) =>
-            logger.error("❌ Erreur connexion MongoDB", { error: err.message }, "database")
+            logger.error(" Erreur connexion MongoDB", { error: err.message }, "database")
         );
 
     // =====================
@@ -132,6 +131,10 @@
         { origins: Array.from(allowedOrigins) },
         "middleware"
     );
+
+    const cookieParser = require("cookie-parser");
+    // ...après les autres middlewares (helmet, cors, json)
+    app.use(cookieParser());
 
     app.use(cookieParser());
 
