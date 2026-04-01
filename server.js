@@ -28,6 +28,7 @@
     const winston = require("winston");
     const logger = require("./backend/logs/logger");
 
+
     // Test simple
     logger.info("✅ Serveur backend démarré");
     logger.warn("Tentative suspecte", { ip: "192.168.1.10" });
@@ -84,6 +85,9 @@
         referrerPolicy: { policy: "no-referrer" },
     }));
     logger.info("Helmet middleware chargé", {}, "middleware");
+
+    const cookieParser = require("cookie-parser");
+    app.use(cookieParser());
 
     // CORS
     app.use(
