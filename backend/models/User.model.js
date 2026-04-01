@@ -21,6 +21,23 @@ const userSchema = new mongoose.Schema(
     goal: { type: String, default: null },
     dietaryPreferences: { type: [String], default: [] },
     startDate: { type: Date, default: null },
+
+    // --- V1 : Objectifs nutritionnels ---
+    profilePicture: { type: String, default: null },
+    calorieGoal: { type: Number, default: null },
+    proteinGoal: { type: Number, default: null },
+    carbsGoal: { type: Number, default: null },
+    fatGoal: { type: Number, default: null },
+    hydrationGoal: { type: Number, default: null },
+
+    // --- V1 : Premium / Gamification ---
+    isPremium: { type: Boolean, default: false },
+    premiumExpiresAt: { type: Date, default: null },
+    xp: { type: Number, default: 0 },
+    level: { type: Number, default: 1 },
+
+    // --- V1 : Appareils connectés ---
+    connectedDevices: { type: [String], default: [] },
   },
   { timestamps: true }
 );

@@ -44,6 +44,29 @@ const mealSchema = new mongoose.Schema(
       type: Number,
       default: null,
     },
+
+    // --- V1 : Champs supplémentaires ---
+    fiber: {
+      type: Number,
+      default: null,
+    },
+    imageUrl: {
+      type: String,
+      default: null,
+    },
+    source: {
+      type: String,
+      enum: ["manual", "scan", "frigo", null],
+      default: null,
+    },
+    confidence: {
+      type: Number,
+      default: null,
+    },
+    aiModel: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,
