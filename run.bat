@@ -21,10 +21,10 @@ if exist node_modules (
     call npm install
 )
 
-REM Installer les dépendances du frontend
+REM Installer les dépendances du frontend (FrontV4)
 echo.
 echo %BLUE%📦 Installation dépendances frontend...%RESET%
-cd frontend
+cd FrontV4
 if exist node_modules (
     echo ✓ node_modules existe déjà
 ) else (
@@ -41,7 +41,7 @@ timeout /t 2 /nobreak
 REM Lancer le frontend en arrière-plan
 echo.
 echo %GREEN%▶ Lancement du serveur frontend...%RESET%
-start "Natty Frontend" cmd /k "cd frontend && npm run dev"
+start "Natty Frontend" cmd /k "cd FrontV4 && npm run dev"
 timeout /t 2 /nobreak
 
 REM Afficher les URLs
@@ -50,7 +50,7 @@ echo ============================================
 echo %GREEN%✅ Servers démarrés!%RESET%
 echo ============================================
 echo.
-echo 📱 Frontend:  %BLUE%http://localhost:3001%RESET%
+echo 📱 Frontend:  %BLUE%http://localhost:3000%RESET%
 echo 🔌 Backend:   %BLUE%http://localhost:5000%RESET%
 echo 🗄️  Database:  %BLUE%MongoDB Atlas Cloud (natty.1vsjt0f.mongodb.net)%RESET%
 echo.

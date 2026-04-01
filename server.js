@@ -172,6 +172,18 @@
     app.use("/api/chatbot", require("./backend/routes/chatbot.routes"));
     logger.info("Route /api/chatbot chargée", {}, "routes");
 
+    app.use("/api/articles", require("./backend/routes/articles.routes"));
+    logger.info("Route /api/articles chargée", {}, "routes");
+
+    app.use("/api/challenges", require("./backend/routes/challenges.routes"));
+    logger.info("Route /api/challenges chargée", {}, "routes");
+
+    app.use("/api/fridges", require("./backend/routes/fridges.routes"));
+    logger.info("Route /api/fridges chargée", {}, "routes");
+
+    app.use("/api/admin", require("./backend/routes/admin.routes"));
+    logger.info("Route /api/admin chargée", {}, "routes");
+
     // =====================
     // SCAN ROUTES
     // =====================
