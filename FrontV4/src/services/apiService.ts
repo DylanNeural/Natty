@@ -73,6 +73,14 @@ async function apiCall<T>(
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
+
+      if (response.status === 429) {
+        throw {
+          message: error.message || 'Trop de requêtes, veuillez patienter avant de réessayer.',
+          status: 429,
+        };
+      }
+
       throw {
         message: error.message || `HTTP Error ${response.status}`,
         status: response.status,

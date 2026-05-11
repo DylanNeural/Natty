@@ -8,6 +8,7 @@ const morgan = require("morgan");
 
 const connectDB = require("./backend/config/db");
 const logger = require("./backend/logs/logger");
+const { globalLimiter } = require("./backend/security/ratelimit");
 
 const authRoutes = require("./backend/routes/auth.routes");
 const mealsRoutes = require("./backend/routes/meals.routes");
@@ -110,6 +111,12 @@ app.use(cookieParser());
 app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 logger.info("JSON and URL-encoded parsers enabled", { limit: "5mb" }, "middleware");
+
+// =====================
+// GLOBAL RATE LIMIT
+// =====================
+// Apply to all API routes. Specific limiters (login/chatbot) stay in place and can be stricter.
+app.use("/api", globalLimiter);
 
 // =====================
 // ROUTES
