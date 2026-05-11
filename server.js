@@ -15,6 +15,14 @@ const scanRoutes = require("./backend/routes/scan.routes");
 const adminRoutes = require("./backend/routes/admin.routes");
 
 const app = express();
+const isProd = process.env.NODE_ENV === "production";
+const trustProxy = isProd || String(process.env.TRUST_PROXY || "").trim() === "1";
+
+app.disable("x-powered-by");
+if (trustProxy) {
+  // Required behind Render/Vercel/Railway/Nginx/any reverse proxy for `req.secure` and correct client IP.
+  app.set("trust proxy", 1);
+}
 
 logger.info("ROOT server.js started", {}, "server");
 
@@ -38,12 +46,27 @@ app.use(
       },
     },
     frameguard: { action: "deny" },
-    hsts: { maxAge: 31536000, includeSubDomains: true },
+    // HSTS should be enabled only in production over HTTPS.
+    hsts: isProd ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false,
     noSniff: true,
     referrerPolicy: { policy: "no-referrer" },
   })
 );
 logger.info("Helmet configured", {}, "middleware");
+
+// Redirect HTTP -> HTTPS in production (when TLS is terminated by a proxy).
+// Keep local dev on HTTP.
+if (isProd && String(process.env.ENFORCE_HTTPS || "1") !== "0") {
+  app.use((req, res, next) => {
+    if (req.secure) return next();
+
+    const host = req.headers.host;
+    if (!host) return next();
+
+    // 308 keeps method and body (safe for POST/PUT).
+    return res.redirect(308, `https://${host}${req.originalUrl}`);
+  });
+}
 
 // -------- CORS --------
 const configuredOrigins = (process.env.CORS_ORIGINS || "")

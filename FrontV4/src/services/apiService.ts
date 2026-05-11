@@ -5,6 +5,11 @@
 
 const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000';
 
+// Prevent mixed-content issues in production (HTTPS frontend calling HTTP backend).
+if ((import.meta as any).env.PROD && typeof API_BASE_URL === 'string' && API_BASE_URL.startsWith('http://')) {
+  throw new Error('VITE_API_URL must be HTTPS in production (mixed content).');
+}
+
 export interface AuthResponse {
   message: string;
   user: {

@@ -95,6 +95,24 @@ CORS_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:8080
 CORS_ORIGINS=https://natty.app,https://app.natty.app,https://natty.vercel.app
 ```
 
+### ðŸ”’ HTTPS / Reverse Proxy (Production)
+En production, HTTPS est gÃ©nÃ©ralement terminÃ© par l'hÃ©bergeur (Render/Railway/Vercel) ou un reverse proxy (Nginx).
+
+Variables recommandÃ©es:
+```env
+NODE_ENV=production
+SERVER_URL=https://api.natty.app
+TRUST_PROXY=1
+ENFORCE_HTTPS=1
+COOKIE_SAMESITE=lax
+```
+
+âš ï¸ Si le frontend et le backend sont sur des domaines diffÃ©rents, il peut Ãªtre nÃ©cessaire d'utiliser:
+```env
+COOKIE_SAMESITE=none
+```
+(avec HTTPS obligatoire).
+
 ### 🧠 OpenAI (Chatbot)
 - **OPENAI_API_KEY**: Clé API OpenAI
   - Obtenir: https://platform.openai.com/api-keys
