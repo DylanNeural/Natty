@@ -157,6 +157,14 @@ curl -X POST http://localhost:5000/api/auth/register \
 3. Utiliser `https` au lieu de `http`
 4. Configurer les vraies clés OpenAI et reCAPTCHA
 5. Ne JAMAIS commiter `.env` avec des clés réelles
+6. Activer la compatibilité reverse proxy / HTTPS:
+   ```env
+   NODE_ENV=production
+   SERVER_URL=https://api.natty.app
+   TRUST_PROXY=1
+   ENFORCE_HTTPS=1
+   COOKIE_SAMESITE=lax
+   ```
 
 ---
 
