@@ -13,7 +13,7 @@ export interface AuthResponse {
     email: string;
     isAdmin?: boolean;
   };
-  token: string;
+  // JWT is stored server-side in a secure httpOnly cookie (not accessible from JS)
 }
 
 export interface AdminOverview {
@@ -48,12 +48,6 @@ export interface ApiError {
   status?: number;
 }
 
-// Helper to get auth header
-function getAuthHeader() {
-  const token = localStorage.getItem('natty_token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
 // Helper for API calls with error handling
 async function apiCall<T>(
   endpoint: string,
@@ -62,7 +56,6 @@ async function apiCall<T>(
   const url = `${API_BASE_URL}${endpoint}`;
   const headers = {
     'Content-Type': 'application/json',
-    ...getAuthHeader(),
     ...(options.headers as Record<string, string>),
   };
 
@@ -107,11 +100,8 @@ export async function register(
     body: JSON.stringify({ name, email, password, captchaToken: 'demo' }),
   });
 
-  // Store token in localStorage
-  if (response.token) {
-    localStorage.setItem('natty_token', response.token);
-    localStorage.setItem('natty_user', JSON.stringify(response.user));
-  }
+  // Keep only non-sensitive user info client-side (never JWT)
+  localStorage.setItem('natty_user', JSON.stringify(response.user));
 
   return response;
 }
@@ -128,20 +118,17 @@ export async function login(
     body: JSON.stringify({ email, password, captchaToken: 'demo' }),
   });
 
-  // Store token in localStorage
-  if (response.token) {
-    localStorage.setItem('natty_token', response.token);
-    localStorage.setItem('natty_user', JSON.stringify(response.user));
-  }
+  // Keep only non-sensitive user info client-side (never JWT)
+  localStorage.setItem('natty_user', JSON.stringify(response.user));
 
   return response;
 }
 
 /**
- * Logout (clear local storage)
+ * Logout (server clears cookie + clear local user cache)
  */
-export function logout(): void {
-  localStorage.removeItem('natty_token');
+export async function logout(): Promise<void> {
+  await apiCall('/api/auth/logout', { method: 'POST' });
   localStorage.removeItem('natty_user');
 }
 
@@ -276,14 +263,12 @@ export async function adminDeleteFridge(fridgeId: string) {
 // ==================== UTILITY ====================
 
 export function isAuthenticated(): boolean {
-  return !!localStorage.getItem('natty_token');
+  // Cookie-based auth: cannot be inferred reliably without calling backend.
+  // This keeps legacy callers stable (none currently), based on cached user only.
+  return !!localStorage.getItem('natty_user');
 }
 
 export function getStoredUser() {
   const user = localStorage.getItem('natty_user');
   return user ? JSON.parse(user) : null;
-}
-
-export function getStoredToken(): string | null {
-  return localStorage.getItem('natty_token');
 }

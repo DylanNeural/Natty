@@ -1,35 +1,20 @@
 // backend/routes/progress.routes.js
 const express = require("express");
-const jwt = require("jsonwebtoken");
 const UserProgress = require("../models/UserProgress.model");
+const authRequired = require("../security/auth.security");
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-natty";
 
-function authRequired(req, res, next) {
-  const authHeader = req.headers.authorization || "";
-
-  if (!authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Token manquant ou invalide" });
-  }
-
-  const token = authHeader.substring("Bearer ".length);
-
-  try {
-    const payload = jwt.verify(token, JWT_SECRET);
-    req.userId = payload.userId;
-    next();
-  } catch (err) {
-    console.error("Erreur JWT /progress :", err);
-    return res.status(401).json({ message: "Token invalide ou expiré" });
-  }
-}
-
-router.use(authRequired);
+router.use(authRequired, (req, res, next) => {
+  const userId = req.user?.userId;
+  if (!userId) return res.status(401).json({ message: "Non autorisÃ©" });
+  req.userId = userId;
+  return next();
+});
 
 /**
  * GET /api/progress
- * Liste la progression de l'utilisateur (triée par date desc)
+ * Liste la progression de l'utilisateur (triÃ©e par date desc)
  */
 router.get("/", async (req, res) => {
   try {
@@ -42,7 +27,7 @@ router.get("/", async (req, res) => {
     console.error("Erreur GET /api/progress :", err);
     return res
       .status(500)
-      .json({ message: "Erreur serveur lors de la récupération de la progression" });
+      .json({ message: "Erreur serveur lors de la rÃ©cupÃ©ration de la progression" });
   }
 });
 
@@ -66,14 +51,12 @@ router.post("/", async (req, res) => {
     });
 
     return res.status(201).json({
-      message: "Entrée de progression créée",
+      message: "EntrÃ©e de progression crÃ©Ã©e",
       entry,
     });
   } catch (err) {
     console.error("Erreur POST /api/progress :", err);
-    return res
-      .status(500)
-      .json({ message: "Erreur serveur lors de la création de la progression" });
+    return res.status(500).json({ message: "Erreur serveur lors de la crÃ©ation de la progression" });
   }
 });
 

@@ -1,5 +1,8 @@
 const jwt = require("jsonwebtoken");
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-natty";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    throw new Error("JWT_SECRET manquant (variable d'environnement requise).");
+}
 
 const authMiddleware = (req, res, next) => {
     const token = req.cookies?.token; // 👈 lu depuis le cookie
