@@ -11,7 +11,10 @@ const verifyRecaptcha = require("../security/recaptcha");
 
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-natty";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET manquant (variable d'environnement requise).");
+}
 
 function generateToken(userId) {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: "7d" });
@@ -24,6 +27,7 @@ const cookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "strict",
+  path: "/",
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours en ms
 };
 
@@ -167,6 +171,7 @@ router.post("/logout", (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
+    path: "/",
   });
   return res.json({ message: "Déconnecté" });
 });

@@ -12,6 +12,7 @@ const logger = require("./backend/logs/logger");
 const authRoutes = require("./backend/routes/auth.routes");
 const mealsRoutes = require("./backend/routes/meals.routes");
 const scanRoutes = require("./backend/routes/scan.routes");
+const adminRoutes = require("./backend/routes/admin.routes");
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use(
 );
 logger.info("Helmet configured", {}, "middleware");
 
+// -------- CORS --------
 const configuredOrigins = (process.env.CORS_ORIGINS || "")
   .split(",")
   .map((origin) => origin.trim())
@@ -86,20 +88,23 @@ app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 logger.info("JSON and URL-encoded parsers enabled", { limit: "5mb" }, "middleware");
 
+// =====================
+// ROUTES
+// =====================
 app.use("/api/profile", require("./backend/routes/profile.routes"));
 app.use("/api/progress", require("./backend/routes/progress.routes"));
 app.use("/api/auth", authRoutes);
 app.use("/api/meals", mealsRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api/chatbot", require("./backend/routes/chatbot.routes"));
 app.use("/api/articles", require("./backend/routes/articles.routes"));
 app.use("/api/challenges", require("./backend/routes/challenges.routes"));
 app.use("/api/fridges", require("./backend/routes/fridges.routes"));
-app.use("/api/admin", require("./backend/routes/admin.routes"));
 app.use("/api", scanRoutes);
 
 logger.info("All API routes loaded", {}, "routes");
 
-app.get("/", (req, res) => {
+app.get("/", (_req, res) => {
   res.send("Natty API online");
 });
 

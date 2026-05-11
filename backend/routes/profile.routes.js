@@ -1,32 +1,16 @@
 // backend/routes/profile.routes.js
 const express = require("express");
-const jwt = require("jsonwebtoken");
 const User = require("../models/User.model");
+const authRequired = require("../security/auth.security");
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-natty";
 
-// même middleware d'auth que dans meals.routes.js
-function authRequired(req, res, next) {
-  const authHeader = req.headers.authorization || "";
-
-  if (!authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Token manquant ou invalide" });
-  }
-
-  const token = authHeader.substring("Bearer ".length);
-
-  try {
-    const payload = jwt.verify(token, JWT_SECRET);
-    req.userId = payload.userId;
-    next();
-  } catch (err) {
-    console.error("Erreur JWT /profile :", err);
-    return res.status(401).json({ message: "Token invalide ou expiré" });
-  }
-}
-
-router.use(authRequired);
+router.use(authRequired, (req, res, next) => {
+  const userId = req.user?.userId;
+  if (!userId) return res.status(401).json({ message: "Non autorisÃ©" });
+  req.userId = userId;
+  return next();
+});
 
 /**
  * GET /api/profile/me
@@ -58,15 +42,13 @@ router.get("/me", async (req, res) => {
     });
   } catch (err) {
     console.error("Erreur GET /api/profile/me :", err);
-    return res
-      .status(500)
-      .json({ message: "Erreur serveur lors de la récupération du profil" });
+    return res.status(500).json({ message: "Erreur serveur lors de la rÃ©cupÃ©ration du profil" });
   }
 });
 
 /**
  * PUT /api/profile/me
- * met à jour des champs du profil
+ * met Ã  jour des champs du profil
  */
 router.put("/me", async (req, res) => {
   try {
@@ -90,18 +72,14 @@ router.put("/me", async (req, res) => {
       }
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.userId,
-      { $set: update },
-      { new: true }
-    ).lean();
+    const user = await User.findByIdAndUpdate(req.userId, { $set: update }, { new: true }).lean();
 
     if (!user) {
       return res.status(404).json({ message: "Utilisateur introuvable" });
     }
 
     return res.json({
-      message: "Profil mis à jour",
+      message: "Profil mis Ã  jour",
       user: {
         id: user._id,
         name: user.name,
@@ -121,9 +99,7 @@ router.put("/me", async (req, res) => {
     });
   } catch (err) {
     console.error("Erreur PUT /api/profile/me :", err);
-    return res
-      .status(500)
-      .json({ message: "Erreur serveur lors de la mise à jour du profil" });
+    return res.status(500).json({ message: "Erreur serveur lors de la mise Ã  jour du profil" });
   }
 });
 

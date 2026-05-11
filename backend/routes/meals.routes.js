@@ -1,40 +1,22 @@
 // backend/routes/meals.routes.js
 const express = require("express");
-const jwt = require("jsonwebtoken");
 const Meal = require("../models/Meal.model");
 const UserMealLog = require("../models/UserMealLog.model");
-const auth = require("../security/auth.security");
+const authRequired = require("../security/auth.security");
 
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-natty";
-
-// Middleware d’auth : extrait userId depuis le token
-function authRequired(req, res, next) {
-  const authHeader = req.headers.authorization || "";
-
-  if (!authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Token manquant ou invalide" });
-  }
-
-  const token = authHeader.substring("Bearer ".length);
-
-  try {
-    const payload = jwt.verify(token, JWT_SECRET);
-    req.userId = payload.userId;
-    next();
-  } catch (err) {
-    console.error("Erreur JWT /meals :", err);
-    return res.status(401).json({ message: "Token invalide ou expiré" });
-  }
-}
-
-// Toutes les routes de ce router nécessitent d’être connecté
-router.use(authRequired);
+// Toutes les routes de ce router nÃ©cessitent dâ€™Ãªtre connectÃ© (cookie httpOnly)
+router.use(authRequired, (req, res, next) => {
+  const userId = req.user?.userId;
+  if (!userId) return res.status(401).json({ message: "Non autorisÃ©" });
+  req.userId = userId;
+  return next();
+});
 
 /**
  * GET /api/meals
- * Retourne les repas consommés par l'utilisateur (user_meal_log + meals)
+ * Retourne les repas consommÃ©s par l'utilisateur (user_meal_log + meals)
  */
 router.get("/", async (req, res) => {
   try {
@@ -47,7 +29,7 @@ router.get("/", async (req, res) => {
       return {
         id: log._id, // id du log
         mealId: meal ? meal._id : null,
-        name: meal ? meal.name : "Repas supprimé",
+        name: meal ? meal.name : "Repas supprimÃ©",
         calories: meal ? meal.calories : null,
         protein: meal ? meal.protein : null,
         carbs: meal ? meal.carbs : null,
@@ -63,7 +45,7 @@ router.get("/", async (req, res) => {
     console.error("Erreur GET /api/meals :", err);
     return res
       .status(500)
-      .json({ message: "Erreur serveur lors de la récupération des repas" });
+      .json({ message: "Erreur serveur lors de la rÃ©cupÃ©ration des repas" });
   }
 });
 
@@ -73,17 +55,15 @@ router.get("/", async (req, res) => {
  * { name, calories?, protein?, carbs?, fat? }
  *
  * Logique :
- * - crée un Meal correspondant
- * - crée un UserMealLog lié à ce Meal et au user
+ * - crÃ©e un Meal correspondant
+ * - crÃ©e un UserMealLog liÃ© Ã  ce Meal et au user
  */
 router.post("/", async (req, res) => {
   try {
     const { name, calories, protein, carbs, fat } = req.body;
 
     if (!name) {
-      return res
-        .status(400)
-        .json({ message: "Le nom du repas est obligatoire" });
+      return res.status(400).json({ message: "Le nom du repas est obligatoire" });
     }
 
     const meal = await Meal.create({
@@ -116,45 +96,14 @@ router.post("/", async (req, res) => {
     };
 
     return res.status(201).json({
-      message: "Repas créé",
+      message: "Repas crÃ©Ã©",
       meal: result,
     });
   } catch (err) {
     console.error("Erreur POST /api/meals :", err);
     return res
       .status(500)
-      .json({ message: "Erreur serveur lors de la création du repas" });
-  }
-});
-
-router.get("/", auth, async (req, res) => {
-  try {
-    res.status(200).json({
-      message: "Meals sécurisés",
-      userId: req.user.userId,
-    });
-  } catch (err) {
-    console.error("Erreur meals :", err);
-    res.status(500).json({ message: "Erreur serveur" });
-  }
-});
-
-
-router.post("/", auth, async (req, res) => {
-  try {
-    // Exemple simple de création
-    const meal = {
-      userId: req.user.userId,
-      ...req.body,
-    };
-
-    res.status(201).json({
-      message: "Meal créé avec succès",
-      meal,
-    });
-  } catch (err) {
-    console.error("Erreur create meal :", err);
-    res.status(500).json({ message: "Erreur serveur" });
+      .json({ message: "Erreur serveur lors de la crÃ©ation du repas" });
   }
 });
 
