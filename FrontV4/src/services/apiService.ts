@@ -5,6 +5,11 @@
 
 const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000';
 
+// Prevent mixed-content issues in production (HTTPS frontend calling HTTP backend).
+if ((import.meta as any).env.PROD && typeof API_BASE_URL === 'string' && API_BASE_URL.startsWith('http://')) {
+  throw new Error('VITE_API_URL must be HTTPS in production (mixed content).');
+}
+
 export interface AuthResponse {
   message: string;
   user: {
@@ -13,7 +18,7 @@ export interface AuthResponse {
     email: string;
     isAdmin?: boolean;
   };
-  token: string;
+  // JWT is stored server-side in a secure httpOnly cookie (not accessible from JS)
 }
 
 export interface AdminOverview {
@@ -48,12 +53,6 @@ export interface ApiError {
   status?: number;
 }
 
-// Helper to get auth header
-function getAuthHeader() {
-  const token = localStorage.getItem('natty_token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
 // Helper for API calls with error handling
 async function apiCall<T>(
   endpoint: string,
@@ -62,7 +61,6 @@ async function apiCall<T>(
   const url = `${API_BASE_URL}${endpoint}`;
   const headers = {
     'Content-Type': 'application/json',
-    ...getAuthHeader(),
     ...(options.headers as Record<string, string>),
   };
 
@@ -75,6 +73,14 @@ async function apiCall<T>(
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
+
+      if (response.status === 429) {
+        throw {
+          message: error.message || 'Trop de requêtes, veuillez patienter avant de réessayer.',
+          status: 429,
+        };
+      }
+
       throw {
         message: error.message || `HTTP Error ${response.status}`,
         status: response.status,
@@ -100,18 +106,16 @@ async function apiCall<T>(
 export async function register(
   name: string,
   email: string,
-  password: string
+  password: string,
+  captchaToken: string
 ): Promise<AuthResponse> {
   const response = await apiCall<AuthResponse>('/api/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ name, email, password, captchaToken: 'demo' }),
+    body: JSON.stringify({ name, email, password, captchaToken }),
   });
 
-  // Store token in localStorage
-  if (response.token) {
-    localStorage.setItem('natty_token', response.token);
-    localStorage.setItem('natty_user', JSON.stringify(response.user));
-  }
+  // Keep only non-sensitive user info client-side (never JWT)
+  localStorage.setItem('natty_user', JSON.stringify(response.user));
 
   return response;
 }
@@ -121,27 +125,25 @@ export async function register(
  */
 export async function login(
   email: string,
-  password: string
+  password: string,
+  captchaToken: string
 ): Promise<AuthResponse> {
   const response = await apiCall<AuthResponse>('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email, password, captchaToken: 'demo' }),
+    body: JSON.stringify({ email, password, captchaToken }),
   });
 
-  // Store token in localStorage
-  if (response.token) {
-    localStorage.setItem('natty_token', response.token);
-    localStorage.setItem('natty_user', JSON.stringify(response.user));
-  }
+  // Keep only non-sensitive user info client-side (never JWT)
+  localStorage.setItem('natty_user', JSON.stringify(response.user));
 
   return response;
 }
 
 /**
- * Logout (clear local storage)
+ * Logout (server clears cookie + clear local user cache)
  */
-export function logout(): void {
-  localStorage.removeItem('natty_token');
+export async function logout(): Promise<void> {
+  await apiCall('/api/auth/logout', { method: 'POST' });
   localStorage.removeItem('natty_user');
 }
 
@@ -276,14 +278,12 @@ export async function adminDeleteFridge(fridgeId: string) {
 // ==================== UTILITY ====================
 
 export function isAuthenticated(): boolean {
-  return !!localStorage.getItem('natty_token');
+  // Cookie-based auth: cannot be inferred reliably without calling backend.
+  // This keeps legacy callers stable (none currently), based on cached user only.
+  return !!localStorage.getItem('natty_user');
 }
 
 export function getStoredUser() {
   const user = localStorage.getItem('natty_user');
   return user ? JSON.parse(user) : null;
-}
-
-export function getStoredToken(): string | null {
-  return localStorage.getItem('natty_token');
 }

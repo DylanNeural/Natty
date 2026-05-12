@@ -1,16 +1,21 @@
 const jwt = require("jsonwebtoken");
 
 module.exports = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader)
-    return res.status(401).json({ message: "Accès refusé" });
+  const JWT_SECRET = process.env.JWT_SECRET;
+  if (!JWT_SECRET) {
+    return res.status(500).json({ message: "JWT_SECRET manquant cÃ´tÃ© serveur" });
+  }
 
-  const token = authHeader.split(" ")[1];
+  // Full-cookie auth: JWT is stored in a secure httpOnly cookie named "token".
+  const token = req.cookies?.token;
+  if (!token) {
+    return res.status(401).json({ message: "AccÃ¨s refusÃ©" });
+  }
 
   try {
-    req.user = jwt.verify(token, process.env.JWT_SECRET);
-    next();
+    req.user = jwt.verify(token, JWT_SECRET);
+    return next();
   } catch {
-    res.status(401).json({ message: "Token invalide" });
+    return res.status(401).json({ message: "Token invalide" });
   }
 };

@@ -49,6 +49,8 @@ import GoalsMacrosScreen from './components/screens/GoalsMacrosScreen';
 import SubscriptionScreen from './components/screens/SubscriptionScreen';
 import AdminScreen from './components/screens/AdminScreen';
 
+import { getProfile, logout as apiLogout } from './services/apiService';
+
 const normalizeUserProfile = (rawUser: any): UserProfile => {
   const safeUser = rawUser || {};
 
@@ -83,10 +85,8 @@ const normalizeUserProfile = (rawUser: any): UserProfile => {
 export default function App() {
   const [screen, setScreen] = useState<Screen>('splash');
   const [user, setUser] = useState<UserProfile | null>(() => {
-    // Try to load from backend if token exists
-    const token = localStorage.getItem('natty_token');
     const saved = localStorage.getItem('natty_user');
-    return token && saved ? normalizeUserProfile(JSON.parse(saved)) : null;
+    return saved ? normalizeUserProfile(JSON.parse(saved)) : null;
   });
   const [selectedFridge, setSelectedFridge] = useState<Fridge | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -99,15 +99,20 @@ export default function App() {
 
   // Redirect to appropriate screen on mount based on auth state
   useEffect(() => {
-    const token = localStorage.getItem('natty_token');
     if (screen === 'splash') {
-      setTimeout(() => {
-        if (token) {
+      const timer = setTimeout(async () => {
+        try {
+          const profile = await getProfile();
+          setUser(normalizeUserProfile(profile));
           setScreen('home');
-        } else {
+        } catch {
+          localStorage.removeItem('natty_user');
+          setUser(null);
           setScreen('login');
         }
       }, 1500); // Show splash screen for 1.5s
+
+      return () => clearTimeout(timer);
     }
   }, [screen]);
 
@@ -121,11 +126,14 @@ export default function App() {
     setScreen('home');
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('natty_token');
-    localStorage.removeItem('natty_user');
-    setUser(null);
-    setScreen('login');
+  const handleLogout = async () => {
+    try {
+      await apiLogout();
+    } finally {
+      localStorage.removeItem('natty_user');
+      setUser(null);
+      setScreen('login');
+    }
   };
 
   const handleOnboardingComplete = (profile: UserProfile) => {

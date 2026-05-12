@@ -7,14 +7,25 @@ const connectDB = require("../config/db");
 const { loginLimiter } = require("../security/ratelimit");
 const { body } = require("express-validator");
 const validate = require("../security/validate");
-const verifyRecaptcha = require("../security/recaptcha");
+const verifyCaptcha = require("../security/captcha");
 
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-natty";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET manquant (variable d'environnement requise).");
+}
 
 function generateToken(userId) {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: "7d" });
+}
+
+function getCookieSameSite() {
+  const raw = String(process.env.COOKIE_SAMESITE || "lax").trim().toLowerCase();
+  if (raw === "strict") return "strict";
+  if (raw === "lax") return "lax";
+  if (raw === "none") return "none";
+  return "lax";
 }
 
 // =====================
@@ -23,9 +34,14 @@ function generateToken(userId) {
 const cookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
-  sameSite: "strict",
+  sameSite: getCookieSameSite(),
+  path: "/",
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours en ms
 };
+
+if (cookieOptions.sameSite === "none" && cookieOptions.secure !== true) {
+  throw new Error("COOKIE_SAMESITE=none requiert NODE_ENV=production (cookie secure).");
+}
 
 /**
  * POST /api/auth/register
@@ -49,7 +65,10 @@ router.post(
     async (req, res) => {
       // 🔐 CAPTCHA VERIFICATION
       const { captchaToken } = req.body;
-      const isHuman = await verifyRecaptcha(captchaToken);
+      if (!captchaToken) {
+        return res.status(400).json({ message: "Captcha requis" });
+      }
+      const isHuman = await verifyCaptcha(captchaToken, req);
       if (!isHuman) {
         return res.status(403).json({ message: "Captcha invalide" });
       }
@@ -113,7 +132,10 @@ router.post(
     async (req, res) => {
       // 🔐 CAPTCHA VERIFICATION
       const { captchaToken } = req.body;
-      const isHuman = await verifyRecaptcha(captchaToken);
+      if (!captchaToken) {
+        return res.status(400).json({ message: "Captcha requis" });
+      }
+      const isHuman = await verifyCaptcha(captchaToken, req);
       if (!isHuman) {
         return res.status(403).json({ message: "Captcha invalide" });
       }
@@ -166,7 +188,8 @@ router.post("/logout", (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: getCookieSameSite(),
+    path: "/",
   });
   return res.json({ message: "Déconnecté" });
 });

@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { User, Mail, LockKeyhole, AlertCircle } from 'lucide-react';
 import Button from '../ui/Button';
 import { register } from '../../services/apiService';
+import HCaptcha from '../ui/HCaptcha';
 
 interface SignupScreenProps {
   onSignup: () => void;
@@ -13,8 +14,11 @@ const SignupScreen = ({ onSignup, onLogin }: SignupScreenProps) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [captchaToken, setCaptchaToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const captchaSiteKey = (import.meta as any).env.VITE_CAPTCHA_SITE_KEY as string | undefined;
 
   const handleSignup = async () => {
     setError('');
@@ -34,9 +38,19 @@ const SignupScreen = ({ onSignup, onLogin }: SignupScreenProps) => {
       return;
     }
 
+    if (!captchaSiteKey) {
+      setError('Captcha non configuré (VITE_CAPTCHA_SITE_KEY manquant)');
+      return;
+    }
+
+    if (!captchaToken) {
+      setError('Veuillez valider le captcha avant de vous inscrire.');
+      return;
+    }
+
     setLoading(true);
     try {
-      await register(name, email, password);
+      await register(name, email, password, captchaToken);
       onSignup();
     } catch (err: any) {
       setError(err.message || 'Erreur lors de l\'inscription');
@@ -109,6 +123,20 @@ const SignupScreen = ({ onSignup, onLogin }: SignupScreenProps) => {
               />
             </div>
           </div>
+
+          {captchaSiteKey && (
+            <div className="pt-2">
+              <HCaptcha
+                siteKey={captchaSiteKey}
+                onVerify={(token) => setCaptchaToken(token)}
+                onExpire={() => setCaptchaToken('')}
+                onError={() => {
+                  setCaptchaToken('');
+                  setError('Erreur captcha, veuillez réessayer.');
+                }}
+              />
+            </div>
+          )}
         </div>
       </div>
       
