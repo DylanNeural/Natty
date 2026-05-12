@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Mail, LockKeyhole, AlertCircle } from 'lucide-react';
 import Button from '../ui/Button';
 import { login } from '../../services/apiService';
+import HCaptcha from '../ui/HCaptcha';
 
 interface LoginScreenProps {
   onLogin: () => void;
@@ -13,8 +14,11 @@ interface LoginScreenProps {
 const LoginScreen = ({ onLogin, onSignup, onForgot }: LoginScreenProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [captchaToken, setCaptchaToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const captchaSiteKey = (import.meta as any).env.VITE_CAPTCHA_SITE_KEY as string | undefined;
 
   const handleLogin = async () => {
     setError('');
@@ -24,9 +28,19 @@ const LoginScreen = ({ onLogin, onSignup, onForgot }: LoginScreenProps) => {
       return;
     }
 
+    if (!captchaSiteKey) {
+      setError('Captcha non configuré (VITE_CAPTCHA_SITE_KEY manquant)');
+      return;
+    }
+
+    if (!captchaToken) {
+      setError('Veuillez valider le captcha avant de vous connecter.');
+      return;
+    }
+
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email, password, captchaToken);
       onLogin();
     } catch (err: any) {
       setError(err.message || 'Erreur de connexion');
@@ -87,6 +101,20 @@ const LoginScreen = ({ onLogin, onSignup, onForgot }: LoginScreenProps) => {
             </div>
           </div>
           <button onClick={onForgot} className="text-xs font-bold text-natty-teal/60 hover:text-natty-teal transition-colors ml-1">Mot de passe oublié ?</button>
+
+          {captchaSiteKey && (
+            <div className="pt-2">
+              <HCaptcha
+                siteKey={captchaSiteKey}
+                onVerify={(token) => setCaptchaToken(token)}
+                onExpire={() => setCaptchaToken('')}
+                onError={() => {
+                  setCaptchaToken('');
+                  setError('Erreur captcha, veuillez réessayer.');
+                }}
+              />
+            </div>
+          )}
         </div>
       </div>
       

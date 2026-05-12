@@ -78,6 +78,31 @@ MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/natty?retryWrite
 
 Obtenez les clés: https://www.google.com/recaptcha/admin
 
+---
+
+## 🧩 Captcha (Login/Register) — recommandé: hCaptcha
+Natty vérifie un `captchaToken` côté serveur avant d'autoriser le login/inscription.
+
+### Frontend (FrontV4)
+Ajouter dans `FrontV4/.env`:
+```env
+VITE_CAPTCHA_SITE_KEY=your-hcaptcha-site-key
+```
+
+### Backend
+Ajouter dans `.env`:
+```env
+CAPTCHA_PROVIDER=hcaptcha
+CAPTCHA_ENABLED=true
+CAPTCHA_SECRET_KEY=your-hcaptcha-secret-key
+```
+
+Si tu utilises Google reCAPTCHA:
+```env
+CAPTCHA_PROVIDER=recaptcha
+RECAPTCHA_SECRET_KEY=your-recaptcha-secret-key
+```
+
 ### 🔀 CORS
 **Pour le développement avec plusieurs frontends:**
 ```env

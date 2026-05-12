@@ -7,7 +7,7 @@ const connectDB = require("../config/db");
 const { loginLimiter } = require("../security/ratelimit");
 const { body } = require("express-validator");
 const validate = require("../security/validate");
-const verifyRecaptcha = require("../security/recaptcha");
+const verifyCaptcha = require("../security/captcha");
 
 const router = express.Router();
 
@@ -65,7 +65,10 @@ router.post(
     async (req, res) => {
       // 🔐 CAPTCHA VERIFICATION
       const { captchaToken } = req.body;
-      const isHuman = await verifyRecaptcha(captchaToken);
+      if (!captchaToken) {
+        return res.status(400).json({ message: "Captcha requis" });
+      }
+      const isHuman = await verifyCaptcha(captchaToken, req);
       if (!isHuman) {
         return res.status(403).json({ message: "Captcha invalide" });
       }
@@ -129,7 +132,10 @@ router.post(
     async (req, res) => {
       // 🔐 CAPTCHA VERIFICATION
       const { captchaToken } = req.body;
-      const isHuman = await verifyRecaptcha(captchaToken);
+      if (!captchaToken) {
+        return res.status(400).json({ message: "Captcha requis" });
+      }
+      const isHuman = await verifyCaptcha(captchaToken, req);
       if (!isHuman) {
         return res.status(403).json({ message: "Captcha invalide" });
       }
