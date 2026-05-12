@@ -10413,3 +10413,70 @@
 2026-04-01 16:08:50 [INFO] scanRoutes chargé ? | {"loaded":true}
 2026-04-01 16:08:50 [INFO] ✅ Serveur backend démarré sur http://localhost:5000
 2026-04-01 16:08:51 [INFO]  MongoDB connecté
+2026-05-12 15:43:46 [INFO] ✅ Logger initialisé et prêt à écrire dans app.log
+2026-05-12 15:43:48 [INFO] ROOT server.js started
+2026-05-12 15:43:48 [INFO] Helmet configured
+2026-05-12 15:43:48 [INFO] Helmet chargé
+2026-05-12 15:43:48 [INFO] CORS configured | {"origins":["http://localhost:3000","http://127.0.0.1:3000","http://localhost:3001","http://127.0.0.1:3001","http://localhost:5001","http://127.0.0.1:5001","http://localhost:5173","http://127.0.0.1:5173","https://nattyfront.vercel.app","http://localhost:8080"]}
+2026-05-12 15:43:48 [INFO] JSON and URL-encoded parsers enabled | {"limit":"5mb"}
+2026-05-12 15:43:48 [INFO] Parsers activés | {"limit":"10kb"}
+2026-05-12 15:43:48 [INFO] Route /api/auth chargée
+2026-05-12 15:43:48 [INFO] Route /api/meals chargée
+2026-05-12 15:43:48 [INFO] Route /api/chatbot chargée
+2026-05-12 15:43:48 [INFO] All API routes loaded
+2026-05-12 15:43:48 [INFO] Backend server started on http://localhost:5000
+2026-05-12 15:43:48 [ERROR] MongoDB connection error | {"error":"MONGODB_URI_DIRECT is not defined"}
+2026-05-12 15:44:12 [INFO] ::ffff:10.31.33.115 - - [12/May/2026:13:44:12 +0000] "GET /api/profile/me HTTP/1.1" 401 32 "-" "Expo/1017756 CFNetwork/3860.500.112 Darwin/25.4.0"
+2026-05-12 15:44:50 [INFO] ✅ Logger initialisé et prêt à écrire dans app.log
+2026-05-12 15:44:51 [INFO] ROOT server.js started
+2026-05-12 15:44:51 [INFO] Helmet configured
+2026-05-12 15:44:51 [INFO] Helmet chargé
+2026-05-12 15:44:51 [INFO] CORS configured | {"origins":["http://localhost:3000","http://127.0.0.1:3000","http://localhost:3001","http://127.0.0.1:3001","http://localhost:5001","http://127.0.0.1:5001","http://localhost:5173","http://127.0.0.1:5173","https://nattyfront.vercel.app","http://localhost:8080"]}
+2026-05-12 15:44:51 [INFO] JSON and URL-encoded parsers enabled | {"limit":"5mb"}
+2026-05-12 15:44:51 [INFO] Parsers activés | {"limit":"10kb"}
+2026-05-12 15:44:51 [INFO] Route /api/auth chargée
+2026-05-12 15:44:51 [INFO] Route /api/meals chargée
+2026-05-12 15:44:51 [INFO] Route /api/chatbot chargée
+2026-05-12 15:44:51 [INFO] All API routes loaded
+2026-05-12 15:44:51 [INFO] Backend server started on http://localhost:5000
+2026-05-12 15:44:51 [ERROR] MongoDB connection error | {"error":"MONGODB_URI_DIRECT is not defined"}
+2026-05-12 15:45:15 [INFO] ✅ Logger initialisé et prêt à écrire dans app.log
+2026-05-12 15:45:15 [INFO] ROOT server.js started
+2026-05-12 15:45:15 [INFO] Helmet configured
+2026-05-12 15:45:15 [INFO] Helmet chargé
+2026-05-12 15:45:15 [INFO] CORS configured | {"origins":["http://localhost:3000","http://127.0.0.1:3000","http://localhost:3001","http://127.0.0.1:3001","http://localhost:5001","http://127.0.0.1:5001","http://localhost:5173","http://127.0.0.1:5173","https://nattyfront.vercel.app","http://localhost:8080"]}
+2026-05-12 15:45:15 [INFO] JSON and URL-encoded parsers enabled | {"limit":"5mb"}
+2026-05-12 15:45:15 [INFO] Parsers activés | {"limit":"10kb"}
+2026-05-12 15:45:15 [INFO] Route /api/auth chargée
+2026-05-12 15:45:15 [INFO] Route /api/meals chargée
+2026-05-12 15:45:15 [INFO] Route /api/chatbot chargée
+2026-05-12 15:45:15 [INFO] All API routes loaded
+2026-05-12 15:45:15 [INFO] Backend server started on http://localhost:5000
+2026-05-12 15:45:15 [ERROR] MongoDB connection error | {"error":"MONGODB_URI_DIRECT is not defined"}
+2026-05-12 15:45:57 [INFO] ✅ Logger initialisé et prêt à écrire dans app.log
+2026-05-12 15:45:57 [INFO] ROOT server.js started
+2026-05-12 15:45:57 [INFO] Helmet configured
+2026-05-12 15:45:57 [INFO] Helmet chargé
+2026-05-12 15:45:57 [INFO] CORS configured | {"origins":["http://localhost:3000","http://127.0.0.1:3000","http://localhost:3001","http://127.0.0.1:3001","http://localhost:5001","http://127.0.0.1:5001","http://localhost:5173","http://127.0.0.1:5173","https://nattyfront.vercel.app","http://localhost:8080"]}
+2026-05-12 15:45:57 [INFO] JSON and URL-encoded parsers enabled | {"limit":"5mb"}
+2026-05-12 15:45:57 [INFO] Parsers activés | {"limit":"10kb"}
+2026-05-12 15:45:57 [INFO] Route /api/auth chargée
+2026-05-12 15:45:57 [INFO] Route /api/meals chargée
+2026-05-12 15:45:57 [INFO] Route /api/chatbot chargée
+2026-05-12 15:45:57 [INFO] All API routes loaded
+2026-05-12 15:45:57 [INFO] Backend server started on http://localhost:5000
+2026-05-12 15:45:58 [INFO] MongoDB connected
+2026-05-12 15:46:19 [INFO] ✅ Logger initialisé et prêt à écrire dans app.log
+2026-05-12 15:46:20 [INFO] ROOT server.js started
+2026-05-12 15:46:20 [INFO] Helmet configured
+2026-05-12 15:46:20 [INFO] Helmet chargé
+2026-05-12 15:46:20 [INFO] CORS configured | {"origins":["http://localhost:3000","http://127.0.0.1:3000","http://localhost:3001","http://127.0.0.1:3001","http://localhost:5001","http://127.0.0.1:5001","http://localhost:5173","http://127.0.0.1:5173","https://nattyfront.vercel.app","http://localhost:8080"]}
+2026-05-12 15:46:20 [INFO] JSON and URL-encoded parsers enabled | {"limit":"5mb"}
+2026-05-12 15:46:20 [INFO] Parsers activés | {"limit":"10kb"}
+2026-05-12 15:46:20 [INFO] Route /api/auth chargée
+2026-05-12 15:46:20 [INFO] Route /api/meals chargée
+2026-05-12 15:46:20 [INFO] Route /api/chatbot chargée
+2026-05-12 15:46:20 [INFO] All API routes loaded
+2026-05-12 15:46:20 [INFO] Backend server started on http://localhost:5000
+2026-05-12 15:46:20 [INFO] MongoDB connected
+2026-05-12 15:50:09 [INFO] ::ffff:10.31.33.115 - - [12/May/2026:13:50:09 +0000] "GET /api/profile/me HTTP/1.1" 401 32 "-" "Expo/1017756 CFNetwork/3860.500.112 Darwin/25.4.0"

@@ -5,10 +5,11 @@ const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
+const csrf = require("csurf");
 
 const connectDB = require("./backend/config/db");
 const logger = require("./backend/logs/logger");
-const { globalLimiter } = require("./backend/security/ratelimit");
+const { globalLimiter, loginLimiter, chatbotLimiter } = require("./backend/security/ratelimit");
 
 const authRoutes = require("./backend/routes/auth.routes");
 const mealsRoutes = require("./backend/routes/meals.routes");
@@ -168,8 +169,7 @@ app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 logger.info("JSON and URL-encoded parsers enabled", { limit: "5mb" }, "middleware");
 
 // 5. Logger HTTP
-const morganStream = { write: (msg) => logger.info(msg.trim(), {}, "http") };
-app.use(morgan("combined", { stream: morganStream }));
+// (Already configured at line 35)
 
 // 6. Parsers JSON
 app.use("/api/scan", express.json({ limit: "8mb" }));
@@ -208,13 +208,6 @@ app.use("/api", scanRoutes);
 
 logger.info("All API routes loaded", {}, "routes");
 
-app.get("/", (_req, res) => {
-  res.send("Natty API online");
-logger.info("Route /api/progress chargée", {}, "routes");
-
-app.use("/api", skipCsrfForNativeRequests, require("./backend/routes/scan.routes"));
-logger.info("Route /api/scan chargée", {}, "routes");
-
 // =====================
 // SONDE / TEST
 // =====================
@@ -228,11 +221,8 @@ app.get("/", (req, res) => {
     res.send("API Natty en ligne ✅");
 });
 
-app.post("/api/_ping_scan", (req, res) => {
-  logger.info("_ping_scan called", { body: req.body }, "probe");
-  res.json({ ok: true, where: "root server.js", body: req.body });
 // =====================
-// GESTION ERREURS
+// ERROR HANDLING
 // =====================
 app.use((err, req, res, next) => {
     if (err.type === "entity.too.large") {

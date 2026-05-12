@@ -10,7 +10,6 @@ try {
 }
 
 const mongoose = require("mongoose");
-const dns = require("dns");
 const { URL, URLSearchParams } = require("url");
 
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -72,7 +71,7 @@ if (!cached) {
 }
 
 async function connectDB() {
-  const mongoUri = MONGODB_URI_DIRECT || MONGODB_URI;
+  const mongoUri = process.env.MONGODB_URI_DIRECT || MONGODB_URI;
 
   if (!mongoUri) {
     throw new Error("❌ MONGODB_URI manquant dans les variables d'environnement");
