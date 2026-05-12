@@ -106,11 +106,12 @@ async function apiCall<T>(
 export async function register(
   name: string,
   email: string,
-  password: string
+  password: string,
+  captchaToken: string
 ): Promise<AuthResponse> {
   const response = await apiCall<AuthResponse>('/api/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ name, email, password, captchaToken: 'demo' }),
+    body: JSON.stringify({ name, email, password, captchaToken }),
   });
 
   // Keep only non-sensitive user info client-side (never JWT)
@@ -124,11 +125,12 @@ export async function register(
  */
 export async function login(
   email: string,
-  password: string
+  password: string,
+  captchaToken: string
 ): Promise<AuthResponse> {
   const response = await apiCall<AuthResponse>('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email, password, captchaToken: 'demo' }),
+    body: JSON.stringify({ email, password, captchaToken }),
   });
 
   // Keep only non-sensitive user info client-side (never JWT)
