@@ -14,8 +14,18 @@ bower_components/
 build/
 dist/
 
-# Environment variables
+# Environment variables — NEVER commit real secrets
 .env
+.env.*
+!.env.example
+!.env.local.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+frontendv4/**/.env
+frontendv4/**/.env.*
+!frontendv4/**/.env.example
+!frontendv4/**/.env.local.example
 
 # IDE files
 .vscode/
