@@ -69,6 +69,11 @@ const csrfProtection = csrf({
 });
 
 function skipCsrfForNativeRequests(req, res, next) {
+    // Preflight CORS — le navigateur n'envoie pas de headers custom ici
+    if (req.method === "OPTIONS") {
+        return next();
+    }
+
     const authHeader = req.headers.authorization || "";
     const xRequestedWith = (req.headers["x-requested-with"] || "").toString();
     const skipOrigins = ["http://localhost:8082", "http://10.31.33.125:8082"];
