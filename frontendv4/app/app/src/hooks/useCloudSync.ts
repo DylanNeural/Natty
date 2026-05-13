@@ -87,15 +87,17 @@ export function useCloudSync() {
   // ─── Mirror journal ───────────────────────────────────────────
   useEffect(() => {
     if (!isAuthenticated) return;
+    const MONGO_ID = /^[a-f0-9]{24}$/i;
     const unsub = useJournalStore.subscribe((state, prev) => {
       const prevIds = new Set(prev.entries.map((e) => e.id));
       const currIds = new Set(state.entries.map((e) => e.id));
+      // Pousser seulement les nouvelles entrées locales (temp IDs, pas encore sur le serveur)
       state.entries.forEach((e) => {
-        if (!prevIds.has(e.id)) pushJournalEntry(e).catch(() => {});
+        if (!prevIds.has(e.id) && !MONGO_ID.test(e.id)) {
+          pushJournalEntry(e).catch(() => {});
+        }
       });
-      prev.entries.forEach((e) => {
-        if (!currIds.has(e.id)) deleteJournalEntryCloud(e.id).catch(() => {});
-      });
+      // Les suppressions sont gérées directement dans removeEntry (store action)
     });
     return unsub;
   }, [isAuthenticated]);

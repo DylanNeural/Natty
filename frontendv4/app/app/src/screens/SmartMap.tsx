@@ -1,23 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Pressable, ScrollView, Animated, Easing, PanResponder } from 'react-native';
+import { View, Text, Pressable, ScrollView, Animated, Platform, PanResponder } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Svg, { Path } from 'react-native-svg';
 import { C, F } from '../tokens';
 import { IconSearch, IconFilter, IconPin, IconClock, IconBox, IconRecenter } from '../shared/Icons';
-import { FRIDGES, distanceMeters, formatDistance, walkingTime } from '../data/fridges';
+import { distanceMeters, formatDistance, walkingTime } from '../data/fridges';
 import { useLocation } from '../hooks/useLocation';
+import { useFridgeStore } from '../store/useFridgeStore';
 import type { MapStackParamList } from '../navigation/types';
 
 type Nav = NativeStackNavigationProp<MapStackParamList, 'SmartMap'>;
-
-// Screen-space positions for the mock map pins (first three fridges).
-const PIN_POS = [
-  { x: 124, y: 248, size: 44 },
-  { x: 242, y: 296, size: 36 },
-  { x: 332, y: 114, size: 36 },
-];
 
 const FILTERS = [
   { t: 'Ouvert', on: true },
@@ -26,49 +19,13 @@ const FILTERS = [
   { t: 'Repas' },
 ];
 
-const SEED: [number, number, number, number][] = [
-  [0, 60, 240, 10],
-  [0, 150, 390, 8],
-  [0, 240, 390, 10],
-  [0, 340, 390, 8],
-  [0, 420, 390, 10],
-  [140, 0, 10, 490],
-  [230, 0, 8, 490],
-  [310, 0, 10, 490],
-  [70, 0, 8, 490],
-];
-
-function MapTiles() {
-  return (
-    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 360, backgroundColor: '#e8ece3' }}>
-      <View style={{ position: 'absolute', left: 20, top: 130, width: 90, height: 80, backgroundColor: '#c8d9b8', borderRadius: 12, opacity: 0.8 }} />
-      <View style={{ position: 'absolute', left: 260, top: 350, width: 120, height: 60, backgroundColor: '#c8d9b8', borderRadius: 12, opacity: 0.8 }} />
-      <View style={{ position: 'absolute', left: -10, top: 380, width: 180, height: 120, backgroundColor: '#cfe0ec', borderRadius: 90, opacity: 0.7 }} />
-      {SEED.map((s, i) => (
-        <View key={i} style={{ position: 'absolute', left: s[0], top: s[1], width: s[2], height: s[3], backgroundColor: '#fff', opacity: 0.95 }} />
-      ))}
-      {Array.from({ length: 10 }).map((_, i) => {
-        const x = (i * 53 + 23) % 360;
-        const y = (i * 79 + 40) % 420;
-        return (
-          <View
-            key={i}
-            style={{
-              position: 'absolute',
-              left: x,
-              top: y,
-              width: 40 + ((i * 13) % 30),
-              height: 28 + ((i * 17) % 20),
-              backgroundColor: '#e0e4d8',
-              borderRadius: 4,
-              opacity: 0.7,
-            }}
-          />
-        );
-      })}
-    </View>
-  );
-}
+// Lazy-loaded only on native — react-native-maps crashes on web
+const MapView = Platform.OS !== 'web'
+  ? require('react-native-maps').default
+  : null;
+const Marker = Platform.OS !== 'web'
+  ? require('react-native-maps').Marker
+  : null;
 
 export default function SmartMap() {
   const navigation = useNavigation<Nav>();
@@ -76,8 +33,15 @@ export default function SmartMap() {
   const searchTop = insets.top + 8;
   const filtersTop = searchTop + 62;
   const { coords, granted } = useLocation();
+  const { fridges: rawFridges, fetchFridges } = useFridgeStore();
+  const mapRef = useRef<any>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // Bottom sheet draggable : 2 snap points (replié / déployé) + drag fluide.
+  useEffect(() => {
+    fetchFridges();
+  }, []);
+
+  // Bottom sheet draggable
   const COLLAPSED_TOP = 506;
   const EXPANDED_TOP = filtersTop + 60;
   const sheetTop = useRef(new Animated.Value(COLLAPSED_TOP)).current;
@@ -105,14 +69,11 @@ export default function SmartMap() {
       onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 3,
       onPanResponderGrant: () => {
         sheetTop.stopAnimation();
-        // Capture la valeur actuelle comme offset pour pouvoir suivre le doigt.
         sheetTop.extractOffset();
       },
       onPanResponderMove: (_, g) => {
-        // Borne le drag entre EXPANDED_TOP et COLLAPSED_TOP
         const start = currentTopRef.current;
-        const dy = g.dy;
-        const next = Math.max(EXPANDED_TOP, Math.min(COLLAPSED_TOP, start + dy));
+        const next = Math.max(EXPANDED_TOP, Math.min(COLLAPSED_TOP, start + g.dy));
         sheetTop.setValue(next - start);
       },
       onPanResponderRelease: (_, g) => {
@@ -120,7 +81,6 @@ export default function SmartMap() {
         const finalTop = currentTopRef.current;
         const distExp = Math.abs(finalTop - EXPANDED_TOP);
         const distCol = Math.abs(finalTop - COLLAPSED_TOP);
-        // Snap à la position la plus proche, biais vélocité (geste rapide).
         const target =
           g.vy < -0.5 ? EXPANDED_TOP : g.vy > 0.5 ? COLLAPSED_TOP : distExp < distCol ? EXPANDED_TOP : COLLAPSED_TOP;
         snapTo(target);
@@ -137,27 +97,110 @@ export default function SmartMap() {
   };
 
   const sortedFridges = useMemo(() => {
-    return FRIDGES.map((f) => {
+    return rawFridges.map((f) => {
       const dist = distanceMeters(coords, { lat: f.lat, lng: f.lng });
-      return {
-        ...f,
-        dist,
-        distLabel: formatDistance(dist),
-        timeLabel: walkingTime(dist),
-      };
+      return { ...f, dist, distLabel: formatDistance(dist), timeLabel: walkingTime(dist) };
     }).sort((a, b) => a.dist - b.dist);
-  }, [coords]);
+  }, [coords, rawFridges]);
 
   const closestOpen = sortedFridges.find((f) => f.open);
+  const activeId = selectedId ?? closestOpen?.id ?? null;
+
+  // Pan map to fridge when marker tapped
+  const handleMarkerPress = (id: string, lat: number, lng: number) => {
+    setSelectedId(id);
+    mapRef.current?.animateToRegion(
+      { latitude: lat, longitude: lng, latitudeDelta: 0.012, longitudeDelta: 0.012 },
+      400
+    );
+  };
+
+  const handleRecenter = () => {
+    mapRef.current?.animateToRegion(
+      { latitude: coords.lat, longitude: coords.lng, latitudeDelta: 0.012, longitudeDelta: 0.012 },
+      400
+    );
+  };
+
+  // Initial region: first fridge or user coords
+  const initialRegion = useMemo(() => {
+    const center = sortedFridges[0] ?? { lat: coords.lat, lng: coords.lng };
+    return { latitude: center.lat, longitude: center.lng, latitudeDelta: 0.025, longitudeDelta: 0.025 };
+  }, [sortedFridges.length > 0]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#edf0ea', overflow: 'hidden' }}>
-      <MapTiles />
+    <View style={{ flex: 1, backgroundColor: '#edf0ea' }}>
 
-      <Svg width={390} height={490} style={{ position: 'absolute', left: 0, top: 0 }}>
-        <Path d="M 146 270 Q 200 260 242 298" stroke={C.orange} strokeWidth={3} strokeDasharray="6 6" fill="none" opacity={0.6} />
-      </Svg>
+      {/* MAP */}
+      {Platform.OS !== 'web' && MapView ? (
+        <MapView
+          ref={mapRef}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          initialRegion={initialRegion}
+          showsUserLocation={granted}
+          showsMyLocationButton={false}
+          showsCompass={false}
+          toolbarEnabled={false}
+        >
+          {sortedFridges.map((f) => {
+            const isSel = f.id === activeId;
+            const color = !f.open ? '#888' : isSel ? C.orange : C.green;
+            return (
+              <Marker
+                key={f.id}
+                coordinate={{ latitude: f.lat, longitude: f.lng }}
+                onPress={() => handleMarkerPress(f.id, f.lat, f.lng)}
+                tracksViewChanges={false}
+              >
+                <View
+                  style={{
+                    width: isSel ? 48 : 38,
+                    height: isSel ? 48 : 38,
+                    borderRadius: 12,
+                    backgroundColor: color,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    shadowColor: isSel ? C.orange : '#000',
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: isSel ? 0.45 : 0.2,
+                    shadowRadius: 12,
+                    elevation: isSel ? 8 : 4,
+                    borderWidth: isSel ? 3 : 0,
+                    borderColor: C.white,
+                  }}
+                >
+                  <Text style={{ fontFamily: F.display, fontWeight: '900', fontSize: isSel ? 22 : 18, color: C.beige }}>N</Text>
+                </View>
+                {isSel && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      bottom: -6,
+                      alignSelf: 'center',
+                      width: 0,
+                      height: 0,
+                      borderLeftWidth: 7,
+                      borderRightWidth: 7,
+                      borderTopWidth: 8,
+                      borderLeftColor: 'transparent',
+                      borderRightColor: 'transparent',
+                      borderTopColor: color,
+                    }}
+                  />
+                )}
+              </Marker>
+            );
+          })}
+        </MapView>
+      ) : (
+        // Web fallback — carte statique stylisée
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#e8ece3' }}>
+          <View style={{ position: 'absolute', left: 20, top: 130, width: 90, height: 80, backgroundColor: '#c8d9b8', borderRadius: 12, opacity: 0.8 }} />
+          <View style={{ position: 'absolute', left: 260, top: 350, width: 120, height: 60, backgroundColor: '#c8d9b8', borderRadius: 12, opacity: 0.8 }} />
+        </View>
+      )}
 
+      {/* SEARCH BAR */}
       <View
         style={{
           position: 'absolute',
@@ -182,7 +225,8 @@ export default function SmartMap() {
         <Text style={{ flex: 1, fontSize: 13, color: '#8a8a8a' }}>Trouver un Natty Fridge...</Text>
         <IconFilter />
       </View>
-      {/* Preview banner — mention claire pour la démo, sans casser le parcours */}
+
+      {/* PREVIEW BANNER */}
       <View
         style={{
           position: 'absolute',
@@ -204,6 +248,7 @@ export default function SmartMap() {
         <Text style={{ fontSize: 10, fontWeight: '700', color: C.lime, letterSpacing: 1 }}>PREVIEW · 1ER FRIGO FIN 2026</Text>
       </View>
 
+      {/* FILTERS */}
       <View style={{ position: 'absolute', left: 16, top: filtersTop, flexDirection: 'row', gap: 8 }}>
         {FILTERS.map((c, i) => (
           <View
@@ -222,66 +267,13 @@ export default function SmartMap() {
         ))}
       </View>
 
-      {PIN_POS.map((p, i) => {
-        const fridge = sortedFridges[i];
-        if (!fridge) return null;
-        const isSel = fridge.id === closestOpen?.id;
-        const color = !fridge.open ? '#888' : isSel ? C.orange : C.green;
-        return (
-          <View key={fridge.id} style={{ position: 'absolute', left: p.x, top: p.y }}>
-            {isSel ? (
-              <View
-                style={{
-                  position: 'absolute',
-                  left: -40,
-                  top: -58,
-                  width: 124,
-                  height: 40,
-                  backgroundColor: C.white,
-                  borderRadius: 10,
-                  padding: 6,
-                  paddingHorizontal: 10,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 12,
-                  elevation: 3,
-                }}
-              >
-                <Text style={{ fontSize: 11, fontWeight: '700', color: C.dark }} numberOfLines={1}>
-                  {fridge.name.split(' ').slice(0, 2).join(' ')}
-                </Text>
-                <Text style={{ fontSize: 9, color: C.green, marginTop: 1 }}>
-                  {fridge.distLabel} · {fridge.stockCount} produits
-                </Text>
-              </View>
-            ) : null}
-            <View
-              style={{
-                width: p.size,
-                height: p.size,
-                borderRadius: 12,
-                backgroundColor: color,
-                alignItems: 'center',
-                justifyContent: 'center',
-                shadowColor: isSel ? C.orange : '#000',
-                shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: isSel ? 0.4 : 0.15,
-                shadowRadius: 16,
-                elevation: 5,
-              }}
-            >
-              <Text style={{ fontFamily: F.display, fontWeight: '900', fontSize: p.size > 40 ? 20 : 16, color: C.beige }}>N</Text>
-            </View>
-          </View>
-        );
-      })}
-
-      <View
+      {/* RECENTER BUTTON */}
+      <Pressable
+        onPress={handleRecenter}
         style={{
           position: 'absolute',
           right: 20,
-          top: 460,
+          top: COLLAPSED_TOP - 64,
           width: 44,
           height: 44,
           borderRadius: 22,
@@ -296,8 +288,9 @@ export default function SmartMap() {
         }}
       >
         <IconRecenter />
-      </View>
+      </Pressable>
 
+      {/* BOTTOM SHEET */}
       <Animated.View
         style={{
           position: 'absolute',
@@ -317,7 +310,6 @@ export default function SmartMap() {
           elevation: 6,
         }}
       >
-        {/* Zone de drag — la handle + son enveloppe captent le pan */}
         <View {...panResponder.panHandlers}>
           <Pressable
             onPress={togglePosition}
@@ -339,13 +331,16 @@ export default function SmartMap() {
         </Text>
         <ScrollView style={{ paddingHorizontal: 14 }} contentContainerStyle={{ gap: 10, paddingBottom: 120 }}>
           {sortedFridges.map((f) => {
-            const isSel = f.id === closestOpen?.id;
+            const isSel = f.id === activeId;
             const disabled = !f.open;
             return (
               <Pressable
                 key={f.id}
                 disabled={disabled}
-                onPress={() => navigation.navigate('AchatS1')}
+                onPress={() => {
+                  handleMarkerPress(f.id, f.lat, f.lng);
+                  navigation.navigate('AchatS1');
+                }}
                 style={{
                   borderRadius: 16,
                   backgroundColor: isSel ? '#e8f2ec' : '#f4f4f4',

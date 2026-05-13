@@ -18,11 +18,17 @@
       "bundleIdentifier": "fr.natty.app",
       "icon": "./assets/logos/logo-beige-on-green.png",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSMotionUsageDescription": "Natty utilise le capteur de pas pour suivre ton activité quotidienne."
       }
     },
     "android": {
       "package": "fr.natty.app",
+      "config": {
+        "googleMaps": {
+          "apiKey": "REMPLACE_PAR_TA_CLE_GOOGLE_MAPS"
+        }
+      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/logos/logo-beige-on-green.png",
         "backgroundColor": "#00412f"

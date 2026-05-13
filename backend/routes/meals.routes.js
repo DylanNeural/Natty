@@ -6,104 +6,101 @@ const authRequired = require("../security/auth.security");
 
 const router = express.Router();
 
-// Toutes les routes de ce router nÃ©cessitent dâ€™Ãªtre connectÃ© (cookie httpOnly)
 router.use(authRequired, (req, res, next) => {
   const userId = req.user?.userId;
-  if (!userId) return res.status(401).json({ message: "Non autorisÃ©" });
+  if (!userId) return res.status(401).json({ message: "Non autorisé" });
   req.userId = userId;
   return next();
 });
 
-/**
- * GET /api/meals
- * Retourne les repas consommÃ©s par l'utilisateur (user_meal_log + meals)
- */
+// GET /api/meals — entrées du journal de l'utilisateur
 router.get("/", async (req, res) => {
   try {
     const logs = await UserMealLog.find({ userId: req.userId })
       .sort({ date: -1 })
       .populate("mealId");
 
-    const meals = logs.map((log) => {
+    const entries = logs.map((log) => {
       const meal = log.mealId;
       return {
-        id: log._id, // id du log
-        mealId: meal ? meal._id : null,
-        name: meal ? meal.name : "Repas supprimÃ©",
-        calories: meal ? meal.calories : null,
-        protein: meal ? meal.protein : null,
-        carbs: meal ? meal.carbs : null,
-        fat: meal ? meal.fat : null,
-        totalCalories: meal ? meal.totalCalories : null,
-        date: log.date,
-        portionEaten: log.portionEaten,
+        id: log._id,
+        source: meal?.source ?? "manual",
+        timestamp: log.date ? new Date(log.date).getTime() : log.createdAt.getTime(),
+        food: meal?.name ?? "Repas supprimé",
+        emoji: meal?.emoji ?? "🍽️",
+        kcal: meal?.calories ?? 0,
+        prot: meal?.protein ?? 0,
+        glu: meal?.carbs ?? 0,
+        lip: meal?.fat ?? 0,
       };
     });
 
-    return res.json({ meals });
+    return res.json({ entries });
   } catch (err) {
     console.error("Erreur GET /api/meals :", err);
-    return res
-      .status(500)
-      .json({ message: "Erreur serveur lors de la rÃ©cupÃ©ration des repas" });
+    return res.status(500).json({ message: "Erreur serveur" });
   }
 });
 
-/**
- * POST /api/meals
- * Body JSON attendu (du front actuel) :
- * { name, calories?, protein?, carbs?, fat? }
- *
- * Logique :
- * - crÃ©e un Meal correspondant
- * - crÃ©e un UserMealLog liÃ© Ã  ce Meal et au user
- */
+// POST /api/meals — ajouter une entrée au journal
 router.post("/", async (req, res) => {
   try {
-    const { name, calories, protein, carbs, fat } = req.body;
+    const { food, kcal, prot, glu, lip, emoji, source, timestamp } = req.body;
 
-    if (!name) {
-      return res.status(400).json({ message: "Le nom du repas est obligatoire" });
+    if (!food) {
+      return res.status(400).json({ message: "Le nom de l'aliment est obligatoire" });
     }
 
     const meal = await Meal.create({
-      name,
-      calories: calories ?? null,
-      protein: protein ?? null,
-      carbs: carbs ?? null,
-      fat: fat ?? null,
-      totalCalories: calories ?? null,
+      name: food,
+      calories: kcal ?? null,
+      protein: prot ?? null,
+      carbs: glu ?? null,
+      fat: lip ?? null,
+      totalCalories: kcal ?? null,
+      emoji: emoji ?? null,
+      source: source ?? "manual",
     });
 
     const log = await UserMealLog.create({
       userId: req.userId,
       mealId: meal._id,
-      date: new Date(),
+      date: timestamp ? new Date(timestamp) : new Date(),
       portionEaten: 1.0,
     });
 
-    const result = {
-      id: log._id,
-      mealId: meal._id,
-      name: meal.name,
-      calories: meal.calories,
-      protein: meal.protein,
-      carbs: meal.carbs,
-      fat: meal.fat,
-      totalCalories: meal.totalCalories,
-      date: log.date,
-      portionEaten: log.portionEaten,
-    };
-
     return res.status(201).json({
-      message: "Repas crÃ©Ã©",
-      meal: result,
+      entry: {
+        id: log._id,
+        source: meal.source,
+        timestamp: new Date(log.date).getTime(),
+        food: meal.name,
+        emoji: meal.emoji ?? "🍽️",
+        kcal: meal.calories ?? 0,
+        prot: meal.protein ?? 0,
+        glu: meal.carbs ?? 0,
+        lip: meal.fat ?? 0,
+      },
     });
   } catch (err) {
     console.error("Erreur POST /api/meals :", err);
-    return res
-      .status(500)
-      .json({ message: "Erreur serveur lors de la crÃ©ation du repas" });
+    return res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+// DELETE /api/meals/:id — supprimer une entrée du journal
+router.delete("/:id", async (req, res) => {
+  try {
+    const log = await UserMealLog.findOne({ _id: req.params.id, userId: req.userId });
+    if (!log) return res.status(404).json({ message: "Entrée introuvable" });
+
+    await Meal.deleteOne({ _id: log.mealId });
+    await log.deleteOne();
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("Erreur DELETE /api/meals :", err);
+    return res.status(500).json({ message: "Erreur serveur" });
   }
 });
 

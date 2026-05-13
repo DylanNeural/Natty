@@ -54,9 +54,13 @@ const mealSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    emoji: {
+      type: String,
+      default: null,
+    },
     source: {
       type: String,
-      enum: ["manual", "scan", "frigo", null],
+      enum: ["manual", "scan", "frigo", "purchase", null],
       default: null,
     },
     confidence: {

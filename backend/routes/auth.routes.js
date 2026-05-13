@@ -65,12 +65,9 @@ router.post(
     async (req, res) => {
       // 🔐 CAPTCHA VERIFICATION
       const { captchaToken } = req.body;
-      if (!captchaToken) {
-        return res.status(400).json({ message: "Captcha requis" });
-      }
       const isHuman = await verifyCaptcha(captchaToken, req);
       if (!isHuman) {
-        return res.status(403).json({ message: "Captcha invalide" });
+        return res.status(captchaToken ? 403 : 400).json({ message: captchaToken ? "Captcha invalide" : "Captcha requis" });
       }
 
       try {
@@ -132,12 +129,9 @@ router.post(
     async (req, res) => {
       // 🔐 CAPTCHA VERIFICATION
       const { captchaToken } = req.body;
-      if (!captchaToken) {
-        return res.status(400).json({ message: "Captcha requis" });
-      }
       const isHuman = await verifyCaptcha(captchaToken, req);
       if (!isHuman) {
-        return res.status(403).json({ message: "Captcha invalide" });
+        return res.status(captchaToken ? 403 : 400).json({ message: captchaToken ? "Captcha invalide" : "Captcha requis" });
       }
 
       try {

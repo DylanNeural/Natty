@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { apiClient } from '../api/api';
 import type { User } from '../api/api';
+import { pullProfile, pullJournal } from '../api/sync';
 
 type AuthState = {
   user: User | null;
@@ -32,6 +33,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         const user = await apiClient.getProfile();
         const token = apiClient.getToken();
         set({ user, token, loading: false });
+        pullProfile();
+        pullJournal();
       } else {
         set({ user: null, token: null, loading: false });
       }
@@ -45,6 +48,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const response = await apiClient.login(email.trim().toLowerCase(), password);
       set({ user: response.user, token: response.token, signingIn: false });
+      pullProfile();
+      pullJournal();
       return true;
     } catch (err: any) {
       const message = humanizeError(err.message || 'Erreur lors de la connexion');
@@ -58,6 +63,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const response = await apiClient.register(name.trim(), email.trim().toLowerCase(), password);
       set({ user: response.user, token: response.token, signingIn: false });
+      pullJournal();
       return true;
     } catch (err: any) {
       const message = humanizeError(err.message || 'Erreur lors de l\'inscription');

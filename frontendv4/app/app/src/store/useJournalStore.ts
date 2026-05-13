@@ -32,7 +32,12 @@ export const useJournalStore = create<JournalState>()(
         set((s) => ({
           entries: [...s.entries, { ...e, id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` }],
         })),
-      removeEntry: (id) => set((s) => ({ entries: s.entries.filter((x) => x.id !== id) })),
+      removeEntry: (id) => {
+        set((s) => ({ entries: s.entries.filter((x) => x.id !== id) }));
+        if (/^[a-f0-9]{24}$/i.test(id)) {
+          import('../api/sync').then(({ deleteJournalEntryCloud }) => deleteJournalEntryCloud(id));
+        }
+      },
       clear: () => set({ entries: [] }),
     }),
     {

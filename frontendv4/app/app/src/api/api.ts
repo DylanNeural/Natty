@@ -204,6 +204,23 @@ export class ApiClient {
     return data.meal;
   }
 
+  async getJournalEntries(): Promise<import('../store/useJournalStore').JournalEntry[]> {
+    const data = await this.request<{ entries: import('../store/useJournalStore').JournalEntry[] }>('/meals', { method: 'GET' });
+    return data.entries;
+  }
+
+  async createJournalEntry(entry: Omit<import('../store/useJournalStore').JournalEntry, 'id'>): Promise<import('../store/useJournalStore').JournalEntry> {
+    const data = await this.request<{ entry: import('../store/useJournalStore').JournalEntry }>('/meals', {
+      method: 'POST',
+      body: JSON.stringify(entry),
+    });
+    return data.entry;
+  }
+
+  async deleteJournalEntry(id: string): Promise<void> {
+    await this.request(`/meals/${id}`, { method: 'DELETE' });
+  }
+
   async getProgress(): Promise<ProgressEntry[]> {
     const data = await this.request<{ entries: ProgressEntry[] }>('/progress', { method: 'GET' });
     return data.entries;
@@ -248,6 +265,22 @@ export class ApiClient {
       method: 'POST',
       body: JSON.stringify({ barcode }),
     });
+  }
+
+  async getFridges(): Promise<import('../data/fridges').Fridge[]> {
+    const data = await this.request<{ fridges: Array<{
+      id: string; name: string; address: string; isOpen: boolean;
+      stockCount: number; lat: number; lng: number;
+    }> }>('/fridges', { method: 'GET' });
+    return data.fridges.map((f) => ({
+      id: String(f.id),
+      name: f.name,
+      addr: f.address,
+      lat: f.lat,
+      lng: f.lng,
+      stockCount: f.stockCount,
+      open: f.isOpen,
+    }));
   }
 
   async isAuthenticated(): Promise<boolean> {

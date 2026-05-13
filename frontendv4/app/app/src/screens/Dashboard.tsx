@@ -22,7 +22,8 @@ import {
   formatPickupTime,
   countdownLabel,
 } from '../store/useReservationsStore';
-import { FRIDGES, distanceMeters, formatDistance, walkingTime } from '../data/fridges';
+import { distanceMeters, formatDistance, walkingTime } from '../data/fridges';
+import { useFridgeStore } from '../store/useFridgeStore';
 import { useLocation } from '../hooks/useLocation';
 import { hapticLight, hapticSuccess } from '../shared/haptics';
 import { MEAL_IMAGES } from '../data/images';
@@ -90,6 +91,7 @@ export default function Dashboard() {
 
   React.useEffect(() => {
     resetHydrationIfNewDay();
+    fetchFridges();
   }, []);
 
   const [refreshing, setRefreshing] = useState(false);
@@ -128,13 +130,15 @@ export default function Dashboard() {
   const hydrationReached = hydrationMl >= hydrationGoalMl;
 
   const { coords } = useLocation();
+  const fridges = useFridgeStore((s) => s.fridges);
+  const fetchFridges = useFridgeStore((s) => s.fetchFridges);
   const closestFridge = React.useMemo(() => {
-    const openFridges = FRIDGES.filter((f) => f.open);
+    const openFridges = fridges.filter((f) => f.open);
     if (openFridges.length === 0) return null;
     return openFridges
       .map((f) => ({ ...f, _d: distanceMeters(coords, { lat: f.lat, lng: f.lng }) }))
       .sort((a, b) => a._d - b._d)[0];
-  }, [coords]);
+  }, [coords, fridges]);
 
   const journalEntries = useJournalStore((s) => s.entries);
   const recentEntries = React.useMemo(

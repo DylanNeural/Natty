@@ -186,7 +186,7 @@ app.use("/api", globalLimiter);
 // =====================
 // ROUTES
 // =====================
-app.use("/api/auth", loginLimiter, skipCsrfForNativeRequests, require("./backend/routes/auth.routes"));
+app.use("/api/auth", skipCsrfForNativeRequests, require("./backend/routes/auth.routes"));
 logger.info("Route /api/auth chargée", {}, "routes");
 
 app.use("/api/meals", skipCsrfForNativeRequests, require("./backend/routes/meals.routes"));

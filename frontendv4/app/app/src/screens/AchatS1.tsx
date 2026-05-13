@@ -11,7 +11,7 @@ import { PRODUCT_IMAGES } from '../data/images';
 import SmartImage from '../shared/SmartImage';
 import { useCartStore } from '../store/useCartStore';
 import { useReservationsStore } from '../store/useReservationsStore';
-import { FRIDGES } from '../data/fridges';
+import { useFridgeStore } from '../store/useFridgeStore';
 import { hapticLight, hapticMedium, hapticSuccess } from '../shared/haptics';
 import TimeSlotPickerModal from '../shared/TimeSlotPickerModal';
 import type { MapStackParamList } from '../navigation/types';
@@ -42,10 +42,11 @@ export default function AchatS1() {
   const subtotal = useCartStore((s) => s.subtotal());
   const createReservation = useReservationsStore((s) => s.createReservation);
 
-  // Frigo courant : le premier ouvert (quand la vraie nav transmettra l'id on le remplacera).
-  const currentFridge = FRIDGES.find((f) => f.open) ?? FRIDGES[0];
+  const fridges = useFridgeStore((s) => s.fridges);
+  const currentFridge = fridges.find((f) => f.open) ?? fridges[0];
 
   const handleReserve = (pickupTs: number) => {
+    if (!currentFridge) return;
     const total = items.reduce((s, c) => s + c.price * c.qty, 0) * 0.95 + 0.3;
     createReservation({
       items: [...items],

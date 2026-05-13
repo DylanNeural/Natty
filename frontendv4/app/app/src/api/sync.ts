@@ -65,26 +65,34 @@ export async function pushProfile() {
 }
 
 // ─── Journal ──────────────────────────────────────────────────────
-// TODO: Implémenter les endpoints backend pour le journal
+
+const MONGO_ID = /^[a-f0-9]{24}$/i;
 
 export async function pullJournal() {
-  // Temporairement : utiliser le store local uniquement
-  // À faire : GET /api/journal (une fois implémenté au backend)
+  try {
+    const serverEntries = await apiClient.getJournalEntries();
+    useJournalStore.setState((s) => {
+      // Garde les entrées locales non encore synced (temp IDs)
+      const pending = s.entries.filter((e) => !MONGO_ID.test(e.id));
+      return { entries: [...serverEntries, ...pending] };
+    });
+  } catch (err) {
+    console.warn('[sync] pullJournal', err);
+  }
 }
 
 export async function pushJournalEntry(e: JournalEntry) {
   try {
-    // TODO: POST /api/journal avec { source, ts, food, emoji, image, kcal, prot, glu, lip }
-    console.log('[sync] Journal push (not yet implemented)', e.id);
+    await apiClient.createJournalEntry(e);
   } catch (err) {
     console.warn('[sync] pushJournalEntry', err);
   }
 }
 
 export async function deleteJournalEntryCloud(entryId: string) {
+  if (!/^[a-f0-9]{24}$/i.test(entryId)) return; // temp ID local, pas encore synced
   try {
-    // TODO: DELETE /api/journal/{entryId}
-    console.log('[sync] Journal delete (not yet implemented)', entryId);
+    await apiClient.deleteJournalEntry(entryId);
   } catch (err) {
     console.warn('[sync] deleteJournalEntryCloud', err);
   }

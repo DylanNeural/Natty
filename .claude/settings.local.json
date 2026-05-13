@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(New-NetFirewallRule -DisplayName \"Natty Backend Port 5000\" -Direction Inbound -Protocol TCP -LocalPort 5000 -Action Allow -Profile Private,Domain)",
+      "Bash(git rm *)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Talon\\\\Desktop\\\\Projets\\\\Natty\\\\frontendv4\\\\app\\\\app\\\\src\" -Recurse -Directory)",
+      "Bash(Select-Object FullName)",
+      "Bash(ipconfig)",
+      "Bash(findstr \"IPv4\")",
+      "Bash(node -e \"const p = require\\('./package.json'\\); console.log\\(JSON.stringify\\(Object.keys\\(p.dependencies\\).filter\\(k => k.includes\\('map'\\) || k.includes\\('google'\\)\\), null, 2\\)\\)\")"
+    ]
+  }
+}
