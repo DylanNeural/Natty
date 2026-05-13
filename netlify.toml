@@ -1,0 +1,12 @@
+[build]
+  base    = "frontendv4/app/app"
+  command = "npx expo export --platform web && cp -r public/. dist/ 2>/dev/null || true && node scripts/inject-meta.js"
+  publish = "frontendv4/app/app/dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
