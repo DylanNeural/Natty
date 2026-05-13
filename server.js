@@ -116,11 +116,6 @@ if (isProd && String(process.env.ENFORCE_HTTPS || "1") !== "0") {
 }
 
 // -------- CORS --------
-const configuredOrigins = (process.env.CORS_ORIGINS || "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-
 const defaultOrigins = [
   "http://localhost:3000",
   "http://127.0.0.1:3000",
@@ -130,21 +125,16 @@ const defaultOrigins = [
   "http://127.0.0.1:5001",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
+  "http://localhost:8082",
+  "http://127.0.0.1:8082",
   "https://nattyfront.vercel.app",
-];
-// 2. CORS (local + Vercel)
-const defaultAllowedOrigins = [
-    "http://localhost:5001",
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:8082",
-    "http://10.31.33.125:8082",
+  "https://tranquil-profiterole-5cdaa6.netlify.app",
 ];
 
-const envAllowedOrigins = (process.env.CORS_ORIGINS || "")
-    .split(",")
-    .map((o) => o.trim())
-    .filter(Boolean);
+const configuredOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
 
 const allowedOrigins = new Set([...defaultOrigins, ...configuredOrigins]);
 const isAllowedOrigin = (origin) => !origin || allowedOrigins.has(origin);
@@ -156,11 +146,9 @@ app.use(
         return callback(null, true);
       }
       logger.warn("CORS origin refused", { origin }, "security");
-      return callback(new Error("Not allowed by CORS"));
+      return callback(null, false);
     },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token"],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token", "X-Requested-With"],
     optionsSuccessStatus: 200,
