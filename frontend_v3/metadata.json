@@ -1,7 +1,0 @@
-{
-  "name": "Natty — Food Scanner & Nutrition",
-  "description": "A smart nutrition companion featuring AI-powered food scanning, meal tracking, and connected fridge integration.",
-  "requestFramePermissions": [
-    "camera"
-  ]
-}
